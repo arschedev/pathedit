@@ -1,5 +1,5 @@
 # 🧰 pathedit
-###### PATH management tool for Linux (or macOS)
+###### PATH management tool for Linux
 
 ## Installation
 ```sh
