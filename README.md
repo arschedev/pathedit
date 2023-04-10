@@ -2,14 +2,16 @@
 ###### PATH management tool for Linux (or macOS)
 
 ## Installation
-#### Manual
+```sh
+curl https://raw.githubusercontent.com/arschedev/pathedit/main/scripts/install.sh | bash
+```
+
+#### Manually
 1. Download pathedit ([`/src/pathedit`](https://raw.githubusercontent.com/arschedev/pathedit/main/src/pathedit))
 1. Open download directory in your Terminal
 1. Type `sudo mv ./pathedit /usr/bin/pathedit` to make it global
 1. Then `sudo chmod +x /urs/bin/pathedit` to mark it as executable
 1. `pathedit` was successfully installed!
-
-###### To uninstall - type `sudo rm /usr/bin/pathedit` in your Terminal
 
 ## Usage
 ```
@@ -39,3 +41,12 @@ Usage: pathedit <mode|command> <path>
         pathedit -reveal		    open ~/.bashrc on PATHEDIT line
 
 ```
+
+## Uninstallation
+```sh
+curl https://raw.githubusercontent.com/arschedev/pathedit/main/scripts/uninstall.sh | bash
+```
+
+#### Manually
+1. `sudo chmod -x /usr/bin/pathedit`
+1. `sudo rm /usr/bin/pathedit`
