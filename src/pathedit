@@ -2,7 +2,7 @@
 use strict;
 use warnings;
 
-my $VERSION = "1.0.0";
+my $VERSION = "1.0.1";
 my $DATE    = "2023-04-10";
 
 # Paths
@@ -123,6 +123,11 @@ my $help = "Usage: pathedit <mode|command> <path>
         pathedit -reveal\t\topen ~/.bashrc on PATHEDIT line\n";
 
 #
+if (scalar @ARGV == 0) {
+    println wrapText("Error: too few arguments...", "=") . "\n" . $help;
+    exit 1;
+}
+
 my $commands = "(-l|-list|-h|-help|-r|-reveal|-v|-version)";
 if ( scalar @ARGV > 0 and $ARGV[0] =~ /$commands/ ) {
 
@@ -134,19 +139,17 @@ if ( scalar @ARGV > 0 and $ARGV[0] =~ /$commands/ ) {
 
     # show
     if ( $ARGV[0] =~ /^(-r|-reveal)$/m ) {
+        my $bashrcf = readFile $bashrc;
+        my @lines   = split( "\n", $bashrcf );
+        my $line    = 0;
 
-        sub getLinePATHEDIT {
-            my $bashrcf = readFile $bashrc;
-            my @lines   = split( "\n", $bashrcf );
-
-            for my $i ( 0 .. $#lines ) {
-                if ( $lines[$i] =~ /^# PATHEDIT$/m ) {
-                    return $i + 1;
-                }
+        for my $i ( 0 .. $#lines ) {
+            if ( $lines[$i] =~ /^# PATHEDIT$/m ) {
+                $line = $i + 1;
+                last;
             }
         }
 
-        my $line = getLinePATHEDIT;
         `gedit ~/.bashrc +$line`;
         exit 0;
     }
@@ -167,7 +170,7 @@ if ( scalar @ARGV > 0 and $ARGV[0] =~ /$commands/ ) {
 }
 
 if ( scalar @ARGV < 2 ) {
-    println wrapText( "Error: no such command.\n Error: too few arguments.", "=" ) . "\n" . $help;
+    println wrapText( "Error: no such command\n Error: too few arguments", "=" ) . "\n" . $help;
     exit 1;
 }
 
@@ -176,7 +179,7 @@ my $path = pathFmt $ARGV[1];
 
 # +|add|-|rm|--|rmf
 if ( $mode !~ /^(\+|add|-|rm|--|rmf|brm)$/m ) {
-    println wrapText( "Error: no such mode. ", "=" ) . "\n" . $help;
+    println wrapText( "Error: no such mode...", "=" ) . "\n" . $help;
     exit 1;
 }
 
