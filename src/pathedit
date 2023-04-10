@@ -1,0 +1,244 @@
+#!/usr/bin/perl
+use strict;
+use warnings;
+
+my $VERSION = "1.0.0";
+my $DATE    = "2023-04-10";
+
+# Paths
+my $home   = glob "~";
+my $bashrc = "$home/.bashrc";
+
+# Utils
+sub println {
+    print "$_[0]\n";
+}
+
+#
+sub promptYN {
+    while (1) {
+        print "OK? (y/n) ";
+
+        my $res = <STDIN>;
+
+        if ( $res =~ /^[yY]$/m ) {
+            return 1;
+        }
+
+        if ( $res =~ /^[nN]$/m ) {
+            return 0;
+        }
+    }
+}
+
+#
+sub wrapText {
+    my $text    = $_[0];
+    my $wrapper = $_[1];
+
+    my $len  = length($text) + 2;
+    my $wrap = $wrapper x $len;
+
+    return "$wrap\n $text\n$wrap\n";
+}
+
+#
+sub readFile {
+    my $path = $_[0];
+
+    open( my $FH, "<:encoding(UTF-8)", $path );
+    my $file = "";
+
+    while (<$FH>) {
+        $file = $file . $_;
+    }
+
+    close $FH;
+    return $file;
+}
+
+#
+sub writeFile {
+    my $path = $_[0];
+    my $data = $_[1];
+
+    open( my $fh, ">", $path );
+    print $fh $data;
+    close $fh;
+}
+
+#
+sub appendFile {
+    my $path = $_[0];
+    my $data = $_[1];
+
+    open( my $fh, ">>", $path );
+    print $fh $data;
+    close $fh;
+}
+
+#
+sub getDir {
+    my $bin = $_[0];
+
+    my @path = split( "/", `which $bin` );
+    pop @path;
+
+    return join( "/", @path );
+}
+
+#
+sub pathFmt {
+    my @path = split( "", $_[0] );
+    if ( $path[-1] eq "/" ) {
+        pop @path;
+    }
+
+    return join( "", @path );
+}
+
+# Main
+my $tabs = "\t" x 5;
+my $help = "Usage: pathedit <mode|command> <path>
+
+    Mode:
+        +,  add\t\tadd to PATH
+        -,  rm\t\tremove from PATH
+        --, rmf\t\tforce remove from PATH
+        brm\t\tremove binary path from PATH
+
+    Command:
+        -l, -list\tlist PATH
+        -r, -reveal\treveal .bashrc
+        -v, -version\tprint version
+        -h, -help\tprint this message
+
+
+    Examples:
+        pathedit add ~/bin/jdk/bin\tadd ~/bin/jdk/bin to PATH
+        pathedit rm  ~/bin/jdk/bin\tremove ~/bin/jdk/bin from PATH
+        pathedit rmf /usr/local/games\tforce remove /usr/local/games from PATH\n$tabs-> PATH=\${PATH/':/usr/local/games'/}
+        pathedit brm java\t\tremove java path from PATH\n$tabs-> force remove ~/bin/jdk/bin
+        pathedit -list\t\t\tprint all directories listed in PATH
+        pathedit -reveal\t\topen ~/.bashrc on PATHEDIT line\n";
+
+#
+my $commands = "(-l|-list|-h|-help|-r|-reveal|-v|-version)";
+if ( scalar @ARGV > 0 and $ARGV[0] =~ /$commands/ ) {
+
+    # list
+    if ( $ARGV[0] =~ /^(-l|-list)$/m ) {
+        println join( "\n", split( ":", `echo \$PATH` ) );
+        exit 0;
+    }
+
+    # show
+    if ( $ARGV[0] =~ /^(-r|-reveal)$/m ) {
+
+        sub getLinePATHEDIT {
+            my $bashrcf = readFile $bashrc;
+            my @lines   = split( "\n", $bashrcf );
+
+            for my $i ( 0 .. $#lines ) {
+                if ( $lines[$i] =~ /^# PATHEDIT$/m ) {
+                    return $i + 1;
+                }
+            }
+        }
+
+        my $line = getLinePATHEDIT;
+        `gedit ~/.bashrc +$line`;
+        exit 0;
+    }
+
+    # version
+    if ( $ARGV[0] =~ /^(-v|-version)$/m ) {
+        println
+          "pathedit version \"$VERSION\" $DATE\nhttps://github.com/arschedev/pathedit\nhttps://github.com/arschedev";
+        exit 0;
+    }
+
+    # help
+    if ( $ARGV[0] =~ /(-h|-help)/ ) {
+        my $pathedit = wrapText( "arschedev's pathedit\n version $VERSION", "*" );
+        println $pathedit . "\n" . $help;
+        exit 0;
+    }
+}
+
+if ( scalar @ARGV < 2 ) {
+    println wrapText( "Error: no such command.\n Error: too few arguments.", "=" ) . "\n" . $help;
+    exit 1;
+}
+
+my $mode = $ARGV[0];
+my $path = pathFmt $ARGV[1];
+
+# +|add|-|rm|--|rmf
+if ( $mode !~ /^(\+|add|-|rm|--|rmf|brm)$/m ) {
+    println wrapText( "Error: no such mode. ", "=" ) . "\n" . $help;
+    exit 1;
+}
+
+# bashrc file
+my $bashrcf = readFile $bashrc;
+
+# PATHEDIT
+if ( $bashrcf !~ /^# PATHEDIT$/m ) {
+    appendFile( $bashrc, "\n\n# PATHEDIT" );
+    $bashrcf = readFile $bashrc;
+}
+
+# add
+if ( $mode =~ /(\+|add)/ ) {
+    appendFile( $bashrc, "\nPATH=\$PATH:$path # add $path" );
+    println "OK (+)";
+    exit 0;
+}
+
+# current
+if ( $mode =~ /(current)/ ) {
+
+}
+
+# remove
+if ( $mode =~ /^(-|rm)$/m ) {
+    if ( $bashrcf !~ /\nPATH=\$PATH:\Q${path}\E\/? #.+$/gm ) {
+        println "Not Found (-)";
+        exit 2;
+    }
+
+    $bashrcf =~ s/\nPATH=\$PATH:\Q${path}\E\/? #.+$//gm;
+    writeFile( $bashrc, $bashrcf );
+    println "OK (-)";
+    exit 0;
+}
+
+# force remove
+if ( $mode =~ /^(--|rmf)$/m ) {
+    appendFile( $bashrc, "\nPATH=\${PATH/':$path'/} # rmf $path" );
+    println "OK (--)";
+    exit 0;
+}
+
+# binary path remove
+if ( $mode =~ /^brm$/m ) {
+    my $dir = getDir($path);
+
+    if ( $dir eq "" ) {
+        println "Not Found (brm)";
+        exit 2;
+    }
+
+    println "Path to be removed from PATH: " . $dir;
+
+    my $res = promptYN;
+
+    if ( $res == 1 ) {
+        appendFile( $bashrc, "\nPATH=\${PATH/':$dir'/} # brm $dir" );
+        println "OK (brm)";
+        exit 0;
+    }
+
+    println "Canceled (brm)";
+}
