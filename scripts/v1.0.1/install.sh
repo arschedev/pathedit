@@ -20,19 +20,19 @@ curl https://raw.githubusercontent.com/arschedev/pathedit/main/src/pathedit --ou
     exit 1
 }
 
-printf " %.0s" {1..17}
+printf " %.0s" {1..14}
 echo -e "OK\n"
 
 # Installation
 echo "* Install: "
 
 {
-    echo -n "-- Moving to /usr/local/bin... " &&
-    sudo mv ./pathedit /usr/local/bin/pathedit &&
+    echo -n "-- Moving to /usr/bin... " &&
+    sudo mv ./pathedit /usr/bin/pathedit &&
+    printf " %.0s" {1..3} &&
     echo "OK" &&
     echo -n "-- Marking as executable... " &&
-    sudo chmod +x /usr/local/bin/pathedit &&
-    printf " %.0s" {1..3} &&
+    sudo chmod +x /usr/bin/pathedit &&
     echo "OK"
 } || {
     echo -e "\nInstaller: unexpected error occurred while installing\n..."
@@ -41,4 +41,4 @@ echo "* Install: "
 
 echo -e -n "\nSuccessfully installed "
 pathedit -v | grep version
-echo "..."
+echo ":D"
