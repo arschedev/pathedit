@@ -20,6 +20,9 @@ curl https://raw.githubusercontent.com/arschedev/pathedit/main/scripts/install.s
 1. Then `sudo chmod +x /usr/local/bin/pathedit` to mark it as executable
 1. `pathedit` was successfully installed!
 
+#### Previous Releases
+[🔗 Releases](https://github.com/arschedev/pathedit/releases)
+
 ## Usage
 ```
 Usage: pathedit <mode|command> <path>
