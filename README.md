@@ -2,15 +2,22 @@
 ###### PATH management tool for Linux
 
 ## Installation
+#### Universal
 ```sh
 curl https://raw.githubusercontent.com/arschedev/pathedit/main/scripts/install.sh | bash
 ```
 
+#### Debian / Ubuntu
+[📥 .deb package](https://raw.githubusercontent.com/arschedev/pathedit/main/packages/pathedit_noarch.deb)
+
+#### RedHat / Fedora
+📥 [.rpm package](https://raw.githubusercontent.com/arschedev/pathedit/main/packages/pathedit_noarch.rpm)
+
 #### Manually
 1. Download pathedit ([`/src/pathedit`](https://raw.githubusercontent.com/arschedev/pathedit/main/src/pathedit))
 1. Open download directory in your Terminal
-1. Type `sudo mv ./pathedit /usr/bin/pathedit` to make it global
-1. Then `sudo chmod +x /urs/bin/pathedit` to mark it as executable
+1. Type `sudo mv ./pathedit /usr/local/bin/pathedit` to make it global
+1. Then `sudo chmod +x /usr/local/bin/pathedit` to mark it as executable
 1. `pathedit` was successfully installed!
 
 ## Usage
@@ -43,10 +50,11 @@ Usage: pathedit <mode|command> <path>
 ```
 
 ## Uninstallation
+#### Universal
 ```sh
 curl https://raw.githubusercontent.com/arschedev/pathedit/main/scripts/uninstall.sh | bash
 ```
 
 #### Manually
-1. `sudo chmod -x /usr/bin/pathedit`
-1. `sudo rm /usr/bin/pathedit`
+1. `sudo chmod -x /usr/local/bin/pathedit`
+1. `sudo rm /usr/local/bin/pathedit`
