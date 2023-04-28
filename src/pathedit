@@ -2,14 +2,28 @@
 use strict;
 use warnings;
 
-my $VERSION = "1.2.0-dev.0";
-my $DATE    = "2023-04-28";
+my $VERSION = "1.2.0-dev.1";
+my $DATE    = "2023-04-29";
+
+# trim
+sub trim {
+    my $string = $_[0];
+    $string =~ s/^\s+|\s+$//g;
+    return $string;
+}
+
+# shell
+sub getShell {
+    my @path = split( "/", `echo \$SHELL` );
+    return trim( $path[-1] );
+}
 
 # Paths
 my $OS     = $^O;
 my $home   = glob "~";
-my $shell  = $OS eq "darwin" ? ".zshrc" : ".bashrc";
-my $bashrc = "$home/$shell";
+my $shell  = getShell;
+my $shellf = ".$shell" . "rc";
+my $bashrc = "$home/$shellf";
 
 # Utils
 sub println {
@@ -90,13 +104,6 @@ sub getDir {
 }
 
 #
-sub trim {
-    my $string = $_[0];
-    $string =~ s/^\s+|\s+$//g;
-    return $string;
-}
-
-#
 sub pathFmt {
     my @path = split( "", $_[0] );
     if ( $path[-1] eq "/" ) {
@@ -108,7 +115,7 @@ sub pathFmt {
 
 #
 sub sourceBashrc {
-    println "Run `source ~/$shell` to update PATH\nWithout logging out";
+    println "Run `source ~/$shellf` to update PATH\nWithout logging out";
 }
 
 # Main
@@ -123,7 +130,7 @@ my $help = "Usage: pathedit <mode|command> <path>
 
     Command:
         -l, -list\tlist PATH
-        -r, -reveal\treveal $shell
+        -r, -reveal\treveal $shellf
         -v, -version\tprint version
         -h, -help\tprint this message
 
@@ -139,7 +146,7 @@ my $help = "Usage: pathedit <mode|command> <path>
         pathedit rm  current\t\tremove current directory from PATH
         pathedit rmf current\t\tforce remove current directory from PATH
         pathedit -list\t\t\tprint all directories listed in PATH
-        pathedit -reveal\t\topen ~/$shell on PATHEDIT line\n";
+        pathedit -reveal\t\topen ~/$shellf on PATHEDIT line\n";
 
 #
 if ( scalar @ARGV == 0 ) {
@@ -149,7 +156,7 @@ if ( scalar @ARGV == 0 ) {
 
 # create .zshrc if not created
 if ( $OS eq "darwin" ) {
-    system "touch ~/.zshrc";
+    system "touch ~/$shellf";
 }
 
 my $commands = "(-l|-list|-h|-help|-r|-reveal|-v|-version)";
@@ -175,12 +182,12 @@ if ( scalar @ARGV > 0 and $ARGV[0] =~ /$commands/ ) {
         }
 
         if ( $OS eq "darwin" ) {
-            println "Scroll to # PATHEDIT";
-            system "open -e ~/.zshrc";
+            println "Scroll to # PATHEDIT\n";
+            system "open -e ~/$shellf";
         }
         else {
             # TODO: gedit ? gedit : default editor
-            system "gedit ~/$shell +$line";
+            system "gedit ~/$shellf +$line";
         }
 
         exit 0;
@@ -288,4 +295,7 @@ if ( $mode =~ /^brm$/m ) {
 # TODO: Refactor
 # TODO: Fix error messages
 # TODO: Add macOS support
-# .zshrc for mac
+# NOTE: rmf & brm don't seem to work on macOS
+#       probably shell issues
+#       TODO: test rmf & brm at /bin/bash
+#       chsh -s /bin/bash
