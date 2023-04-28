@@ -27,34 +27,34 @@ curl https://raw.githubusercontent.com/arschedev/pathedit/main/scripts/install.s
 ```
 Usage: pathedit <mode|command> <path>
 
-	Mode:
-		+,  add			add to PATH
-		-,  rm			remove from PATH
-		--, rmf			force remove from PATH
-		brm				remove binary path from PATH
+    Mode:
+	+,  add		add to PATH
+	-,  rm		remove from PATH
+	--, rmf		force remove from PATH
+	brm		remove binary path from PATH
 
-	Command:
-		-l, -list		list PATH
-		-r, -reveal		reveal .bashrc
-		-v, -version	print version
-		-h, -help		print this message
+    Command:
+	-l, -list	list PATH
+	-r, -reveal	reveal .bashrc
+	-v, -version	print version
+	-h, -help	print this message
 
-	Shortcuts:
-		<mode> current	add/remove current directory from PATH
+    Shortcuts:
+	<mode> current	add/remove current directory from PATH
 
-	Examples:
-		pathedit add ~/bin/jdk/bin		add ~/bin/jdk/bin to PATH
-		pathedit rm  ~/bin/jdk/bin		remove ~/bin/jdk/bin from PATH
-		pathedit rmf /usr/local/games	force remove /usr/local/games from PATH
-										-> PATH=${PATH/':/usr/local/games'/}
-		pathedit brm java				remove java path from PATH
-										-> force remove ~/bin/jdk/bin
-		pathedit add current			add current directory to PATH
-		pathedit rm  current			remove current directory from PATH
-		pathedit rmf current			force remove current directory from PATH
-		pathedit -list					print all directories listed in PATH
-		pathedit -reveal				open ~/.bashrc on PATHEDIT line
- 
+    Examples:
+	pathedit add ~/bin/jdk/bin	add ~/bin/jdk/bin to PATH
+	pathedit rm  ~/bin/jdk/bin	remove ~/bin/jdk/bin from PATH
+	pathedit rmf /usr/local/games	force remove /usr/local/games from PATH
+					-> PATH=${PATH/':/usr/local/games'/}
+	pathedit brm java		remove java path from PATH
+					-> force remove ~/bin/jdk/bin
+	pathedit add current		add current directory to PATH
+	pathedit rm  current		remove current directory from PATH
+	pathedit rmf current		force remove current directory from PATH
+	pathedit -list			print all directories listed in PATH
+	pathedit -reveal		open ~/.bashrc on PATHEDIT line
+
 ```
 
 ## Uninstallation
