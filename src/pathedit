@@ -2,12 +2,14 @@
 use strict;
 use warnings;
 
-my $VERSION = "1.1.0";
+my $VERSION = "1.2.0-dev.0";
 my $DATE    = "2023-04-28";
 
 # Paths
+my $OS     = $^O;
 my $home   = glob "~";
-my $bashrc = "$home/.bashrc";
+my $shell  = $OS eq "darwin" ? ".zshrc" : ".bashrc";
+my $bashrc = "$home/$shell";
 
 # Utils
 sub println {
@@ -106,7 +108,7 @@ sub pathFmt {
 
 #
 sub sourceBashrc {
-    println "Run `source ~/.bashrc` to update PATH\nWithout logging out";
+    println "Run `source ~/$shell` to update PATH\nWithout logging out";
 }
 
 # Main
@@ -121,7 +123,7 @@ my $help = "Usage: pathedit <mode|command> <path>
 
     Command:
         -l, -list\tlist PATH
-        -r, -reveal\treveal .bashrc
+        -r, -reveal\treveal $shell
         -v, -version\tprint version
         -h, -help\tprint this message
 
@@ -137,12 +139,17 @@ my $help = "Usage: pathedit <mode|command> <path>
         pathedit rm  current\t\tremove current directory from PATH
         pathedit rmf current\t\tforce remove current directory from PATH
         pathedit -list\t\t\tprint all directories listed in PATH
-        pathedit -reveal\t\topen ~/.bashrc on PATHEDIT line\n";
+        pathedit -reveal\t\topen ~/$shell on PATHEDIT line\n";
 
 #
 if ( scalar @ARGV == 0 ) {
     println wrapText( "Error: too few arguments...", "=" ) . "\n" . $help;
     exit 1;
+}
+
+# create .zshrc if not created
+if ( $OS eq "darwin" ) {
+    system "touch ~/.zshrc";
 }
 
 my $commands = "(-l|-list|-h|-help|-r|-reveal|-v|-version)";
@@ -167,7 +174,15 @@ if ( scalar @ARGV > 0 and $ARGV[0] =~ /$commands/ ) {
             }
         }
 
-        `gedit ~/.bashrc +$line`;
+        if ( $OS eq "darwin" ) {
+            println "Scroll to # PATHEDIT";
+            system "open -e ~/.zshrc";
+        }
+        else {
+            # TODO: gedit ? gedit : default editor
+            system "gedit ~/$shell +$line";
+        }
+
         exit 0;
     }
 
@@ -273,3 +288,4 @@ if ( $mode =~ /^brm$/m ) {
 # TODO: Refactor
 # TODO: Fix error messages
 # TODO: Add macOS support
+# .zshrc for mac
