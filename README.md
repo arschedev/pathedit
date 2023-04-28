@@ -54,7 +54,7 @@ Usage: pathedit <mode|command> <path>
 		pathedit rmf current			force remove current directory from PATH
 		pathedit -list					print all directories listed in PATH
 		pathedit -reveal				open ~/.bashrc on PATHEDIT line
-
+ 
 ```
 
 ## Uninstallation
