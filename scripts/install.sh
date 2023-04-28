@@ -1,5 +1,5 @@
 #!/usr/bin/bash
-echo -e "*********************************\n arschedev's pathedit install.sh \n*********************************\n"
+echo -e "********************************\n arschedev's pathedit installer \n********************************\n"
 
 # Dependencies
 sudo echo "* Dependencies: "
@@ -14,17 +14,17 @@ perl -v &>/dev/null || {
 echo -e "installed\n"
 
 # Download
-echo -n "* Download... "
+echo -n "* Downloading... "
 curl https://raw.githubusercontent.com/arschedev/pathedit/main/src/pathedit --output pathedit --silent || {
     echo -e "\nInstaller: unexpected error occurred while downloading\n..."
     exit 1
 }
 
-printf " %.0s" {1..17}
+printf " %.0s" {1..14}
 echo -e "OK\n"
 
 # Installation
-echo "* Install: "
+echo "* Installing: "
 
 {
     echo -n "-- Moving to /usr/local/bin... " &&

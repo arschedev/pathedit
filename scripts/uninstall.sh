@@ -1,5 +1,5 @@
 #!/usr/bin/bash
-echo -e "***********************************\n arschedev's pathedit uninstall.sh \n***********************************\n"
+echo -e "**********************************\n arschedev's pathedit uninstaller \n**********************************\n"
 
 {
     sudo echo -n "chmod -x /usr/local/bin/pathedit... " &&
