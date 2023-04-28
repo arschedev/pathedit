@@ -27,13 +27,22 @@ echo -e "OK\n"
 echo "* Installing: "
 
 {
-    echo -n "-- Moving to /usr/local/bin... " &&
-    sudo mv ./pathedit /usr/local/bin/pathedit &&
-    echo "OK" &&
-    echo -n "-- Marking as executable... " &&
-    sudo chmod +x /usr/local/bin/pathedit &&
-    printf " %.0s" {1..3} &&
-    echo "OK"
+    echo -n "-- Checking /usr/local/bin...  " &&
+        if [ -d /usr/local/bin ]; then
+            echo "OK"
+        else
+            echo "NG"
+            echo -n "--- Creating /usr/local/bin... "
+            sudo mkdir /usr/local/bin
+            echo "OK"
+        fi &&
+        echo -n "-- Moving to /usr/local/bin... " &&
+        sudo mv ./pathedit /usr/local/bin/pathedit &&
+        echo "OK" &&
+        echo -n "-- Marking as executable... " &&
+        sudo chmod +x /usr/local/bin/pathedit &&
+        printf " %.0s" {1..3} &&
+        echo "OK"
 } || {
     echo -e "\nInstaller: unexpected error occurred while installing\n..."
     exit 1
