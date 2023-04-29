@@ -2,8 +2,8 @@
 use strict;
 use warnings;
 
-my $VERSION = "1.2.0-dev.1";
-my $DATE    = "2023-04-29";
+my $VERSION = "1.2.0-dev.2";
+my $DATE    = "2023-04-30";
 
 # trim
 sub trim {
@@ -19,11 +19,12 @@ sub getShell {
 }
 
 # Paths
-my $OS     = $^O;
-my $home   = glob "~";
-my $shell  = getShell;
-my $shellf = ".$shell" . "rc";
-my $bashrc = "$home/$shellf";
+my $OS      = $^O;
+my $home    = glob "~";
+my $shell   = getShell;
+my $shellf  = ".$shell" . "rc";
+my $bashrc  = "$home/$shellf";
+my $profile = "$home/.profile";
 
 # Utils
 sub println {
@@ -115,7 +116,7 @@ sub pathFmt {
 
 #
 sub sourceBashrc {
-    println "Run `source ~/$shellf` to update PATH\nWithout logging out";
+    println "Run `source ~/$shellf` to update PATH\nWithout logging out\n";
 }
 
 # Main
@@ -131,6 +132,7 @@ my $help = "Usage: pathedit <mode|command> <path>
     Command:
         -l, -list\tlist PATH
         -r, -reveal\treveal $shellf
+        -P, -profile\treveal ~/.profile
         -v, -version\tprint version
         -h, -help\tprint this message
 
@@ -154,12 +156,10 @@ if ( scalar @ARGV == 0 ) {
     exit 1;
 }
 
-# create .zshrc if not created
-if ( $OS eq "darwin" ) {
-    system "touch ~/$shellf";
-}
+# create .*rc if not created
+system "touch ~/$shellf";
 
-my $commands = "(-l|-list|-h|-help|-r|-reveal|-v|-version)";
+my $commands = "(-l|-list|-h|-help|-r|-reveal|-P|-profile|-v|-version)";
 if ( scalar @ARGV > 0 and $ARGV[0] =~ /$commands/ ) {
 
     # list
@@ -168,8 +168,8 @@ if ( scalar @ARGV > 0 and $ARGV[0] =~ /$commands/ ) {
         exit 0;
     }
 
-    # show
-    if ( $ARGV[0] =~ /^(-r|-reveal)$/m ) {
+    # reveal
+    if ( $ARGV[0] =~ /^(-r|-reveal|-P|-profile)$/m ) {
         my $bashrcf = readFile $bashrc;
         my @lines   = split( "\n", $bashrcf );
         my $line    = 0;
@@ -223,12 +223,18 @@ if ( $mode !~ /^(\+|add|-|rm|--|rmf|brm)$/m ) {
 }
 
 # bashrc file
-my $bashrcf = readFile $bashrc;
+my $bashrcf  = readFile $bashrc;
+my $profilef = readFile $profile;
 
 # PATHEDIT
 if ( $bashrcf !~ /^# PATHEDIT$/m ) {
     appendFile( $bashrc, "\n\n# PATHEDIT" );
     $bashrcf = readFile $bashrc;
+}
+
+if ( $profilef !~ /^# PATHEDIT$/m ) {
+    appendFile( $profile, "\n\n# PATHEDIT" );
+    $profilef = readFile $profile;
 }
 
 # shortcuts
@@ -241,7 +247,9 @@ if ( $mode =~ /^(\+|add|-|rm|--|rmf)$/ ) {
 
 # add
 if ( $mode =~ /^(\+|add)$/m ) {
-    appendFile( $bashrc, "\nPATH=\$PATH:$path # add $path" );
+    my $export = "\nPATH=\$PATH:$path # add $path";
+    appendFile( $bashrc,  $export );
+    appendFile( $profile, $export );
     println "OK (+)";
     sourceBashrc;
     exit 0;
@@ -254,8 +262,10 @@ if ( $mode =~ /^(-|rm)$/m ) {
         exit 2;
     }
 
-    $bashrcf =~ s/\nPATH=\$PATH:\Q${path}\E\/? #.+$//gm;
-    writeFile( $bashrc, $bashrcf );
+    $bashrcf  =~ s/\nPATH=\$PATH:\Q${path}\E\/? #.+$//gm;
+    $profilef =~ s/\nPATH=\$PATH:\Q${path}\E\/? #.+$//gm;
+    writeFile( $bashrc,  $bashrcf );
+    writeFile( $profile, $profilef );
     println "OK (-)";
     sourceBashrc;
     exit 0;
@@ -263,7 +273,9 @@ if ( $mode =~ /^(-|rm)$/m ) {
 
 # force remove
 if ( $mode =~ /^(--|rmf)$/m ) {
-    appendFile( $bashrc, "\nPATH=\${PATH/':$path'/} # rmf $path" );
+    my $export = "\nPATH=\${PATH/':$path'/} # rmf $path";
+    appendFile( $bashrc,  $export );
+    appendFile( $profile, $export );
     println "OK (--)";
     sourceBashrc;
     exit 0;
@@ -283,7 +295,9 @@ if ( $mode =~ /^brm$/m ) {
     my $res = promptYN;
 
     if ( $res == 1 ) {
-        appendFile( $bashrc, "\nPATH=\${PATH/':$dir'/} # brm $dir" );
+        my $export = "\nPATH=\${PATH/':$dir'/} # brm $dir";
+        appendFile( $bashrc,  $export );
+        appendFile( $profile, $export );
         println "OK (brm)";
         sourceBashrc;
         exit 0;
@@ -295,7 +309,13 @@ if ( $mode =~ /^brm$/m ) {
 # TODO: Refactor
 # TODO: Fix error messages
 # TODO: Add macOS support
+# TODO: Test append to ~/.profile
+# TODO: Add functionality to -P, -profile
 # NOTE: rmf & brm don't seem to work on macOS
 #       probably shell issues
-#       TODO: test rmf & brm at /bin/bash
-#       chsh -s /bin/bash
+#       TODO: test rmf & brm at /bin/bash -- didn't work
+#       (chsh -s /bin/*)
+# NOTE: ~/.bashrc trick doesn't work on macOS with /bin/bash -- using ~/.profile
+# NOTE: no such thing as ~/.shrc for /bin/sh
+#       test for ~/.profile
+#       otherwise use ENV or something
