@@ -6,6 +6,8 @@
 ```sh
 curl https://raw.githubusercontent.com/arschedev/pathedit/main/scripts/install.sh | bash
 ```
+#### macOS
+[📥 .pkg installer](https://raw.githubusercontent.com/arschedev/pathedit/macos/packages/pathedit_noarch.pkg)
 
 #### Debian / Ubuntu
 [📥 .deb package](https://raw.githubusercontent.com/arschedev/pathedit/main/packages/pathedit_noarch.deb)
@@ -35,7 +37,8 @@ Usage: pathedit <mode|command> <path>
 
     Command:
 	-l, -list	list PATH
-	-r, -reveal	reveal .bashrc
+	-P, -profile	reveal ~/.profile
+	-r, -reveal	reveal ~/.bashrc
 	-v, -version	print version
 	-h, -help	print this message
 
@@ -53,6 +56,7 @@ Usage: pathedit <mode|command> <path>
 	pathedit rm  current		remove current directory from PATH
 	pathedit rmf current		force remove current directory from PATH
 	pathedit -list			print all directories listed in PATH
+	pathedit -profile		open ~/.profile on PATHEDIT line
 	pathedit -reveal		open ~/.bashrc on PATHEDIT line
 
 ```
