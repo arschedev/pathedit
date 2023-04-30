@@ -2,7 +2,7 @@
 use strict;
 use warnings;
 
-my $VERSION = "1.2.0-dev.2";
+my $VERSION = "1.2.0-dev.3";
 my $DATE    = "2023-04-30";
 
 # trim
@@ -115,8 +115,13 @@ sub pathFmt {
 }
 
 #
-sub sourceBashrc {
-    println "Run `source ~/$shellf` to update PATH\nWithout logging out\n";
+sub sourceBashrcMsg {
+    println "Run `source ~/$shellf` to update PATH\nWithout logging out";
+}
+
+#
+sub reloginMsg {
+    println "Please re-login into your terminal to update PATH";
 }
 
 # Main
@@ -131,7 +136,7 @@ my $help = "Usage: pathedit <mode|command> <path>
 
     Command:
         -l, -list\tlist PATH
-        -r, -reveal\treveal $shellf
+        -r, -reveal\treveal ~/$shellf
         -P, -profile\treveal ~/.profile
         -v, -version\tprint version
         -h, -help\tprint this message
@@ -148,6 +153,7 @@ my $help = "Usage: pathedit <mode|command> <path>
         pathedit rm  current\t\tremove current directory from PATH
         pathedit rmf current\t\tforce remove current directory from PATH
         pathedit -list\t\t\tprint all directories listed in PATH
+        pathedit -profile\t\topen ~/.profile on PATHEDIT line
         pathedit -reveal\t\topen ~/$shellf on PATHEDIT line\n";
 
 #
@@ -156,8 +162,9 @@ if ( scalar @ARGV == 0 ) {
     exit 1;
 }
 
-# create .*rc if not created
+# create .*rc & .profile if not created
 system "touch ~/$shellf";
+system "touch ~/.profile";
 
 my $commands = "(-l|-list|-h|-help|-r|-reveal|-P|-profile|-v|-version)";
 if ( scalar @ARGV > 0 and $ARGV[0] =~ /$commands/ ) {
@@ -170,7 +177,8 @@ if ( scalar @ARGV > 0 and $ARGV[0] =~ /$commands/ ) {
 
     # reveal
     if ( $ARGV[0] =~ /^(-r|-reveal|-P|-profile)$/m ) {
-        my $bashrcf = readFile $bashrc;
+        my $bashrcf = readFile( $ARGV[0] =~ /^(-r|-reveal)$/m ? $bashrc : $profile );
+        my $file    = $ARGV[0] =~ /^(-r|-reveal)$/m ? $bashrc : $profile;
         my @lines   = split( "\n", $bashrcf );
         my $line    = 0;
 
@@ -183,11 +191,11 @@ if ( scalar @ARGV > 0 and $ARGV[0] =~ /$commands/ ) {
 
         if ( $OS eq "darwin" ) {
             println "Scroll to # PATHEDIT\n";
-            system "open -e ~/$shellf";
+            system "open -e $file";
         }
         else {
             # TODO: gedit ? gedit : default editor
-            system "gedit ~/$shellf +$line";
+            system "gedit $file +$line";
         }
 
         exit 0;
@@ -251,13 +259,13 @@ if ( $mode =~ /^(\+|add)$/m ) {
     appendFile( $bashrc,  $export );
     appendFile( $profile, $export );
     println "OK (+)";
-    sourceBashrc;
+    sourceBashrcMsg;
     exit 0;
 }
 
 # remove
 if ( $mode =~ /^(-|rm)$/m ) {
-    if ( $bashrcf !~ /\nPATH=\$PATH:\Q${path}\E\/? #.+$/gm ) {
+    if ( $bashrcf !~ /\nPATH=\$PATH:\Q${path}\E\/? #.+$/gm and $profilef !~ /\nPATH=\$PATH:\Q${path}\E\/? #.+$/gm ) {
         println "Not Found (-)";
         exit 2;
     }
@@ -267,7 +275,7 @@ if ( $mode =~ /^(-|rm)$/m ) {
     writeFile( $bashrc,  $bashrcf );
     writeFile( $profile, $profilef );
     println "OK (-)";
-    sourceBashrc;
+    reloginMsg;
     exit 0;
 }
 
@@ -277,7 +285,7 @@ if ( $mode =~ /^(--|rmf)$/m ) {
     appendFile( $bashrc,  $export );
     appendFile( $profile, $export );
     println "OK (--)";
-    sourceBashrc;
+    reloginMsg;
     exit 0;
 }
 
@@ -299,7 +307,7 @@ if ( $mode =~ /^brm$/m ) {
         appendFile( $bashrc,  $export );
         appendFile( $profile, $export );
         println "OK (brm)";
-        sourceBashrc;
+        reloginMsg;
         exit 0;
     }
 
@@ -309,13 +317,5 @@ if ( $mode =~ /^brm$/m ) {
 # TODO: Refactor
 # TODO: Fix error messages
 # TODO: Add macOS support
-# TODO: Test append to ~/.profile
-# TODO: Add functionality to -P, -profile
 # NOTE: rmf & brm don't seem to work on macOS
-#       probably shell issues
-#       TODO: test rmf & brm at /bin/bash -- didn't work
-#       (chsh -s /bin/*)
-# NOTE: ~/.bashrc trick doesn't work on macOS with /bin/bash -- using ~/.profile
-# NOTE: no such thing as ~/.shrc for /bin/sh
-#       test for ~/.profile
-#       otherwise use ENV or something
+#       test in /bin/bash and /bin/sh
