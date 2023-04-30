@@ -1,4 +1,9 @@
 #!/bin/bash
+if test -z "$1"; then
+    echo "Version is not specified"
+    exit
+fi
+
 echo "Type: osxpkg"
 echo "Version: $1"
 cd ../../src
