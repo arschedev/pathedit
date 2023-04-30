@@ -2,7 +2,7 @@
 use strict;
 use warnings;
 
-my $VERSION = "1.2.0-dev.3";
+my $VERSION = "1.2.0-dev.4";
 my $DATE    = "2023-04-30";
 
 # trim
@@ -281,6 +281,11 @@ if ( $mode =~ /^(-|rm)$/m ) {
 
 # force remove
 if ( $mode =~ /^(--|rmf)$/m ) {
+    if ( $OS eq "darwin" ) {
+        println "Not supported (rmf at macOS)";
+        exit 0;
+    }
+
     my $export = "\nPATH=\${PATH/':$path'/} # rmf $path";
     appendFile( $bashrc,  $export );
     appendFile( $profile, $export );
@@ -291,6 +296,11 @@ if ( $mode =~ /^(--|rmf)$/m ) {
 
 # binary path remove
 if ( $mode =~ /^brm$/m ) {
+    if ( $OS eq "darwin" ) {
+        println "Not supported (brm at macOS)";
+        exit 0;
+    }
+
     my $dir = getDir($path);
 
     if ( $dir eq "" ) {
@@ -317,5 +327,3 @@ if ( $mode =~ /^brm$/m ) {
 # TODO: Refactor
 # TODO: Fix error messages
 # TODO: Add macOS support
-# NOTE: rmf & brm don't seem to work on macOS
-#       test in /bin/bash and /bin/sh
