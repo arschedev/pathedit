@@ -2,7 +2,7 @@
 use strict;
 use warnings;
 
-my $VERSION = "1.2.0-dev.4";
+my $VERSION = "1.2.0-dev.5";
 my $DATE    = "2023-04-30";
 
 # trim
@@ -125,14 +125,22 @@ sub reloginMsg {
 }
 
 # Main
+my $ifdarwin     = "";
+my $notsupported = "";
+
+if ( $OS eq "darwin" ) {
+    $notsupported = "(not supported)";
+    $ifdarwin     = " for mac";
+}
+
 my $tabs = "\t" x 5;
 my $help = "Usage: pathedit <mode|command> <path>
 
     Mode:
         +,  add\t\tadd to PATH
         -,  rm\t\tremove from PATH
-        --, rmf\t\tforce remove from PATH
-        brm\t\tremove binary path from PATH
+        --, rmf\t\tforce remove from PATH $notsupported
+        brm\t\tremove binary path from PATH $notsupported
 
     Command:
         -l, -list\tlist PATH
@@ -194,8 +202,15 @@ if ( scalar @ARGV > 0 and $ARGV[0] =~ /$commands/ ) {
             system "open -e $file";
         }
         else {
-            # TODO: gedit ? gedit : default editor
-            system "gedit $file +$line";
+            my $ifgedit = `gedit -V 2>&1` ? 1 : 0;
+
+            if ($ifgedit) {
+                system "gedit $file +$line";
+            }
+            else {
+                println "Scroll to # PATHEDIT\n";
+                system "xdg-open $file";
+            }
         }
 
         exit 0;
@@ -210,7 +225,7 @@ if ( scalar @ARGV > 0 and $ARGV[0] =~ /$commands/ ) {
 
     # help
     if ( $ARGV[0] =~ /(-h|-help)/ ) {
-        my $pathedit = wrapText( "arschedev's pathedit\n version $VERSION", "*" );
+        my $pathedit = wrapText( "arschedev's pathedit$ifdarwin\n version $VERSION", "*" );
         println $pathedit . "\n" . $help;
         exit 0;
     }
@@ -282,7 +297,7 @@ if ( $mode =~ /^(-|rm)$/m ) {
 # force remove
 if ( $mode =~ /^(--|rmf)$/m ) {
     if ( $OS eq "darwin" ) {
-        println "Not supported (rmf at macOS)";
+        println "Not supported (rmf at macOS)\n";
         exit 0;
     }
 
@@ -297,7 +312,7 @@ if ( $mode =~ /^(--|rmf)$/m ) {
 # binary path remove
 if ( $mode =~ /^brm$/m ) {
     if ( $OS eq "darwin" ) {
-        println "Not supported (brm at macOS)";
+        println "Not supported (brm at macOS)\n";
         exit 0;
     }
 
@@ -325,5 +340,5 @@ if ( $mode =~ /^brm$/m ) {
 }
 
 # TODO: Refactor
-# TODO: Fix error messages
-# TODO: Add macOS support
+# TODO: Refine error messages
+# TODO: Full macOS support
