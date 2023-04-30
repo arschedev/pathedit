@@ -6,6 +6,8 @@
 ```sh
 curl https://raw.githubusercontent.com/arschedev/pathedit/main/scripts/install.sh | bash
 ```
+#### macOS
+[📥 .pkg installer](https://raw.githubusercontent.com/arschedev/pathedit/macos/packages/pathedit_noarch.pkg)
 
 #### Debian / Ubuntu
 [📥 .deb package](https://raw.githubusercontent.com/arschedev/pathedit/main/packages/pathedit_noarch.deb)
