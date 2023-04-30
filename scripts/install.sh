@@ -1,4 +1,4 @@
-#!/usr/bin/bash
+#!/bin/bash
 echo -e "********************************\n arschedev's pathedit installer \n********************************\n"
 
 # Dependencies

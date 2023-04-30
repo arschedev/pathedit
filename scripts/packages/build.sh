@@ -1,4 +1,4 @@
-#!/usr/bin/bash
+#!/bin/bash
 # check version
 if test -z "$1"; then
     echo "Version is not specified"

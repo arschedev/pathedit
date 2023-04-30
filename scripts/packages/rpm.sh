@@ -1,4 +1,4 @@
-#!/usr/bin/bash
+#!/bin/bash
 echo "Type: rpm"
 echo "Version: $1"
 cd ../../src

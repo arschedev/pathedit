@@ -1,4 +1,4 @@
-#!/usr/bin/bash
+#!/bin/bash
 echo "Type: deb"
 echo "Version: $1"
 cd ../../src
