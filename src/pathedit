@@ -2,8 +2,8 @@
 use strict;
 use warnings;
 
-my $VERSION = "1.2.0-dev.5";
-my $DATE    = "2023-04-30";
+my $VERSION = "1.2.0-dev.6";
+my $DATE    = "2023-05-02";
 
 # trim
 sub trim {
@@ -166,7 +166,8 @@ my $help = "Usage: pathedit <mode|command> <path>
 
 #
 if ( scalar @ARGV == 0 ) {
-    println wrapText( "Error: too few arguments...", "=" ) . "\n" . $help;
+    my $pathedit = wrapText( "arschedev's pathedit$ifdarwin\n version $VERSION", "*" );
+    println $pathedit . "\n" . $help;
     exit 1;
 }
 
@@ -241,7 +242,7 @@ my $path = pathFmt $ARGV[1];
 
 # +|add|-|rm|--|rmf
 if ( $mode !~ /^(\+|add|-|rm|--|rmf|brm)$/m ) {
-    println wrapText( "Error: no such mode...", "=" ) . "\n" . $help;
+    println wrapText( "Error: no such mode...\n Error: `$mode` not found", "=" ) . "\n" . $help;
     exit 1;
 }
 
@@ -298,7 +299,7 @@ if ( $mode =~ /^(-|rm)$/m ) {
 if ( $mode =~ /^(--|rmf)$/m ) {
     if ( $OS eq "darwin" ) {
         println "Not supported (rmf at macOS)\n";
-        exit 0;
+        exit 1;
     }
 
     my $export = "\nPATH=\${PATH/':$path'/} # rmf $path";
@@ -313,7 +314,7 @@ if ( $mode =~ /^(--|rmf)$/m ) {
 if ( $mode =~ /^brm$/m ) {
     if ( $OS eq "darwin" ) {
         println "Not supported (brm at macOS)\n";
-        exit 0;
+        exit 1;
     }
 
     my $dir = getDir($path);
