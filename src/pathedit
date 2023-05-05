@@ -2,8 +2,8 @@
 use strict;
 use warnings;
 
-my $VERSION = "1.2.0-dev.6";
-my $DATE    = "2023-05-02";
+my $VERSION = "1.2.0-dev.7";
+my $DATE    = "2023-05-05";
 
 # trim
 sub trim {
@@ -15,15 +15,15 @@ sub trim {
 # shell
 sub getShell {
     my @path = split( "/", `echo \$SHELL` );
-    return trim( $path[-1] );
+    return trim $path[-1];
 }
 
 # Paths
 my $OS      = $^O;
 my $home    = glob "~";
 my $shell   = getShell;
-my $shellf  = ".$shell" . "rc";
-my $bashrc  = "$home/$shellf";
+my $xrcfn   = ".$shell" . "rc";
+my $xrc     = "$home/$xrcfn";
 my $profile = "$home/.profile";
 
 # Utils
@@ -32,19 +32,13 @@ sub println {
 }
 
 #
-sub promptYN {
+sub confirm {
     while (1) {
         print "OK? (y/n) ";
-
         my $res = <STDIN>;
 
-        if ( $res =~ /^[yY]$/m ) {
-            return 1;
-        }
-
-        if ( $res =~ /^[nN]$/m ) {
-            return 0;
-        }
+        return 1 if ( $res =~ /^[yY]$/m );
+        return 0 if ( $res =~ /^[nN]$/m );
     }
 }
 
@@ -115,16 +109,12 @@ sub pathFmt {
 }
 
 #
-sub sourceBashrcMsg {
-    println "Run `source ~/$shellf` to update PATH\nWithout logging out";
-}
+my %message = (
+    "re_login"    => "Please re-login into your terminal to update PATH",
+    "update_path" => "Run `source ~/$xrcfn` to update PATH\nWithout logging out"
+);
 
-#
-sub reloginMsg {
-    println "Please re-login into your terminal to update PATH";
-}
-
-# Main
+##
 my $ifdarwin     = "";
 my $notsupported = "";
 
@@ -144,7 +134,7 @@ my $help = "Usage: pathedit <mode|command> <path>
 
     Command:
         -l, -list\tlist PATH
-        -r, -reveal\treveal ~/$shellf
+        -r, -reveal\treveal ~/$xrcfn
         -P, -profile\treveal ~/.profile
         -v, -version\tprint version
         -h, -help\tprint this message
@@ -162,7 +152,7 @@ my $help = "Usage: pathedit <mode|command> <path>
         pathedit rmf current\t\tforce remove current directory from PATH
         pathedit -list\t\t\tprint all directories listed in PATH
         pathedit -profile\t\topen ~/.profile on PATHEDIT line
-        pathedit -reveal\t\topen ~/$shellf on PATHEDIT line\n";
+        pathedit -reveal\t\topen ~/$xrcfn on PATHEDIT line\n";
 
 #
 if ( scalar @ARGV == 0 ) {
@@ -172,24 +162,25 @@ if ( scalar @ARGV == 0 ) {
 }
 
 # create .*rc & .profile if not created
-system "touch ~/$shellf";
+system "touch ~/$xrcfn";
 system "touch ~/.profile";
 
 my $commands = "(-l|-list|-h|-help|-r|-reveal|-P|-profile|-v|-version)";
 if ( scalar @ARGV > 0 and $ARGV[0] =~ /$commands/ ) {
+    my $command = $ARGV[0];
 
     # list
-    if ( $ARGV[0] =~ /^(-l|-list)$/m ) {
+    if ( $command =~ /^(-l|-list)$/m ) {
         println join( "\n", split( ":", `echo \$PATH` ) );
         exit 0;
     }
 
     # reveal
-    if ( $ARGV[0] =~ /^(-r|-reveal|-P|-profile)$/m ) {
-        my $bashrcf = readFile( $ARGV[0] =~ /^(-r|-reveal)$/m ? $bashrc : $profile );
-        my $file    = $ARGV[0] =~ /^(-r|-reveal)$/m ? $bashrc : $profile;
-        my @lines   = split( "\n", $bashrcf );
-        my $line    = 0;
+    if ( $command =~ /^(-r|-reveal|-P|-profile)$/m ) {
+        my $xrcf  = readFile( $command =~ /^(-r|-reveal)$/m ? $xrc : $profile );
+        my $file  = $command =~ /^(-r|-reveal)$/m ? $xrc : $profile;
+        my @lines = split( "\n", $xrcf );
+        my $line  = 0;
 
         for my $i ( 0 .. $#lines ) {
             if ( $lines[$i] =~ /^# PATHEDIT$/m ) {
@@ -218,14 +209,14 @@ if ( scalar @ARGV > 0 and $ARGV[0] =~ /$commands/ ) {
     }
 
     # version
-    if ( $ARGV[0] =~ /^(-v|-version)$/m ) {
+    if ( $command =~ /^(-v|-version)$/m ) {
         println
           "pathedit version \"$VERSION\" $DATE\nhttps://github.com/arschedev/pathedit\nhttps://github.com/arschedev";
         exit 0;
     }
 
     # help
-    if ( $ARGV[0] =~ /(-h|-help)/ ) {
+    if ( $command =~ /(-h|-help)/ ) {
         my $pathedit = wrapText( "arschedev's pathedit$ifdarwin\n version $VERSION", "*" );
         println $pathedit . "\n" . $help;
         exit 0;
@@ -247,13 +238,13 @@ if ( $mode !~ /^(\+|add|-|rm|--|rmf|brm)$/m ) {
 }
 
 # bashrc file
-my $bashrcf  = readFile $bashrc;
+my $xrcf     = readFile $xrc;
 my $profilef = readFile $profile;
 
 # PATHEDIT
-if ( $bashrcf !~ /^# PATHEDIT$/m ) {
-    appendFile( $bashrc, "\n\n# PATHEDIT" );
-    $bashrcf = readFile $bashrc;
+if ( $xrcf !~ /^# PATHEDIT$/m ) {
+    appendFile( $xrc, "\n\n# PATHEDIT" );
+    $xrcf = readFile $xrc;
 }
 
 if ( $profilef !~ /^# PATHEDIT$/m ) {
@@ -264,7 +255,7 @@ if ( $profilef !~ /^# PATHEDIT$/m ) {
 # shortcuts
 if ( $mode =~ /^(\+|add|-|rm|--|rmf)$/ ) {
     if ( $path eq "current" ) {
-        $path = trim(`pwd`);
+        $path = trim `pwd`;
         println $path . "\n";
     }
 }
@@ -272,26 +263,30 @@ if ( $mode =~ /^(\+|add|-|rm|--|rmf)$/ ) {
 # add
 if ( $mode =~ /^(\+|add)$/m ) {
     my $export = "\nPATH=\$PATH:$path # add $path";
-    appendFile( $bashrc,  $export );
+
+    appendFile( $xrc,     $export );
     appendFile( $profile, $export );
+
     println "OK (+)";
-    sourceBashrcMsg;
+    println $message{"update_path"};
     exit 0;
 }
 
 # remove
 if ( $mode =~ /^(-|rm)$/m ) {
-    if ( $bashrcf !~ /\nPATH=\$PATH:\Q${path}\E\/? #.+$/gm and $profilef !~ /\nPATH=\$PATH:\Q${path}\E\/? #.+$/gm ) {
+    if ( $xrcf !~ /\nPATH=\$PATH:\Q${path}\E\/? #.+$/gm && $profilef !~ /\nPATH=\$PATH:\Q${path}\E\/? #.+$/gm ) {
         println "Not Found (-)";
         exit 2;
     }
 
-    $bashrcf  =~ s/\nPATH=\$PATH:\Q${path}\E\/? #.+$//gm;
+    $xrcf     =~ s/\nPATH=\$PATH:\Q${path}\E\/? #.+$//gm;
     $profilef =~ s/\nPATH=\$PATH:\Q${path}\E\/? #.+$//gm;
-    writeFile( $bashrc,  $bashrcf );
+
+    writeFile( $xrc,     $xrcf );
     writeFile( $profile, $profilef );
+
     println "OK (-)";
-    reloginMsg;
+    println $message{"re_login"};
     exit 0;
 }
 
@@ -303,10 +298,12 @@ if ( $mode =~ /^(--|rmf)$/m ) {
     }
 
     my $export = "\nPATH=\${PATH/':$path'/} # rmf $path";
-    appendFile( $bashrc,  $export );
+
+    appendFile( $xrc,     $export );
     appendFile( $profile, $export );
+
     println "OK (--)";
-    reloginMsg;
+    println $message{"re_login"};
     exit 0;
 }
 
@@ -317,23 +314,24 @@ if ( $mode =~ /^brm$/m ) {
         exit 1;
     }
 
-    my $dir = getDir($path);
+    my $dir = getDir $path;
 
     if ( $dir eq "" ) {
         println "Not Found (brm)";
         exit 2;
     }
 
-    println "Path to be removed from PATH: " . $dir;
-
-    my $res = promptYN;
+    println "Path to be removed from PATH: $dir";
+    my $res = confirm();
 
     if ( $res == 1 ) {
-        my $export = "\nPATH=\${PATH/':$dir'/} # brm $dir";
-        appendFile( $bashrc,  $export );
+        my $export = "\nPATH=\${PATH/':$dir'/} # brm $path";
+
+        appendFile( $xrc,     $export );
         appendFile( $profile, $export );
+
         println "OK (brm)";
-        reloginMsg;
+        println $message{"re_login"};
         exit 0;
     }
 
