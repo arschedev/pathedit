@@ -2,7 +2,7 @@
 use strict;
 use warnings;
 
-my $VERSION = "1.2.0-dev.7";
+my $VERSION = "1.2.0";
 my $DATE    = "2023-05-05";
 
 # trim
@@ -338,6 +338,6 @@ if ( $mode =~ /^brm$/m ) {
     println "Canceled (brm)";
 }
 
-# TODO: Refactor
-# TODO: Refine error messages
-# TODO: Full macOS support
+# TODO: Refine error handling
+# TODO: Improve shell support
+# TODO: Complete macOS support
