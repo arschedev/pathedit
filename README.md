@@ -1,5 +1,5 @@
 # 🧰 pathedit
-###### PATH management tool for Linux
+###### PATH management tool for Linux & macOS
 
 ## Installation
 #### Universal
