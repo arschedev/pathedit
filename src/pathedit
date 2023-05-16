@@ -2,21 +2,11 @@
 use strict;
 use warnings;
 
-my $VERSION = "1.2.0";
-my $DATE    = "2023-05-05";
+my $VERSION = "1.3.0-dev.0";
+my $DATE    = "2023-05-16";
 
-# trim
-sub trim {
-    my $string = $_[0];
-    $string =~ s/^\s+|\s+$//g;
-    return $string;
-}
-
-# shell
-sub getShell {
-    my @path = split( "/", `echo \$SHELL` );
-    return trim $path[-1];
-}
+sub trim;
+sub getShell;
 
 # Paths
 my $OS      = $^O;
@@ -27,86 +17,15 @@ my $xrc     = "$home/$xrcfn";
 my $profile = "$home/.profile";
 
 # Utils
-sub println {
-    print "$_[0]\n";
-}
-
-#
-sub confirm {
-    while (1) {
-        print "OK? (y/n) ";
-        my $res = <STDIN>;
-
-        return 1 if ( $res =~ /^[yY]$/m );
-        return 0 if ( $res =~ /^[nN]$/m );
-    }
-}
-
-#
-sub wrapText {
-    my $text    = $_[0];
-    my $wrapper = $_[1];
-
-    my $len  = length($text) + 2;
-    my $wrap = $wrapper x $len;
-
-    return "$wrap\n $text\n$wrap\n";
-}
-
-#
-sub readFile {
-    my $path = $_[0];
-
-    open( my $FH, "<:encoding(UTF-8)", $path );
-    my $file = "";
-
-    while (<$FH>) {
-        $file = $file . $_;
-    }
-
-    close $FH;
-    return $file;
-}
-
-#
-sub writeFile {
-    my $path = $_[0];
-    my $data = $_[1];
-
-    open( my $fh, ">", $path );
-    print $fh $data;
-    close $fh;
-}
-
-#
-sub appendFile {
-    my $path = $_[0];
-    my $data = $_[1];
-
-    open( my $fh, ">>", $path );
-    print $fh $data;
-    close $fh;
-}
-
-#
-sub getDir {
-    my $bin = $_[0];
-
-    my @path = split( "/", `which $bin` );
-    pop @path;
-
-    return join( "/", @path );
-}
-
-#
-sub pathFmt {
-    my @path = split( "", $_[0] );
-    if ( $path[-1] eq "/" ) {
-        pop @path;
-    }
-
-    return join( "", @path );
-}
+sub println;
+sub confirm;
+sub wrapText;
+sub readFile;
+sub writeFile;
+sub appendFile;
+sub touchFile;
+sub getDir;
+sub pathFmt;
 
 #
 my %message = (
@@ -114,7 +33,7 @@ my %message = (
     "update_path" => "Run `source ~/$xrcfn` to update PATH\nWithout logging out"
 );
 
-##
+###
 my $ifdarwin     = "";
 my $notsupported = "";
 
@@ -162,8 +81,8 @@ if ( scalar @ARGV == 0 ) {
 }
 
 # create .*rc & .profile if not created
-system "touch ~/$xrcfn";
-system "touch ~/.profile";
+touchFile "~/$xrcfn";
+touchFile "~/.profile";
 
 my $commands = "(-l|-list|-h|-help|-r|-reveal|-P|-profile|-v|-version)";
 if ( scalar @ARGV > 0 and $ARGV[0] =~ /$commands/ ) {
@@ -336,6 +255,106 @@ if ( $mode =~ /^brm$/m ) {
     }
 
     println "Canceled (brm)";
+}
+
+## Utils
+sub trim {
+    my $string = $_[0];
+    $string =~ s/^\s+|\s+$//g;
+    return $string;
+}
+
+#
+sub getShell {
+    my @path = split( "/", `echo \$SHELL` );
+    return trim $path[-1];
+}
+
+#
+sub println {
+    print "$_[0]\n";
+}
+
+#
+sub confirm {
+    while (1) {
+        print "OK? (y/n) ";
+        my $res = <STDIN>;
+
+        return 1 if ( $res =~ /^[yY]$/m );
+        return 0 if ( $res =~ /^[nN]$/m );
+    }
+}
+
+#
+sub wrapText {
+    my $text    = $_[0];
+    my $wrapper = $_[1];
+
+    my $len  = length($text) + 2;
+    my $wrap = $wrapper x $len;
+
+    return "$wrap\n $text\n$wrap\n";
+}
+
+#
+sub readFile {
+    my $path = $_[0];
+
+    open( my $FH, "<:encoding(UTF-8)", $path );
+    my $file = "";
+
+    while (<$FH>) {
+        $file = $file . $_;
+    }
+
+    close $FH;
+    return $file;
+}
+
+#
+sub writeFile {
+    my $path = $_[0];
+    my $data = $_[1];
+
+    open( my $fh, ">", $path );
+    print $fh $data;
+    close $fh;
+}
+
+#
+sub appendFile {
+    my $path = $_[0];
+    my $data = $_[1];
+
+    open( my $fh, ">>", $path );
+    print $fh $data;
+    close $fh;
+}
+
+#
+sub touchFile {
+    system "touch $_[0]";
+}
+
+#
+sub getDir {
+    my $bin = $_[0];
+
+    my @path = split( "/", `which $bin` );
+    pop @path;
+
+    return join( "/", @path );
+}
+
+#
+sub pathFmt {
+    my @path = split( "", $_[0] );
+    if ( $path[-1] eq "/" ) {
+        pop @path;
+    }
+
+    return join( "", @path );
 }
 
 # TODO: Refine error handling
