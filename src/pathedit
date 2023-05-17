@@ -2,17 +2,40 @@
 use strict;
 use warnings;
 
-my $VERSION = "1.3.0-dev.0";
-my $DATE    = "2023-05-16";
+my $VERSION = "1.3.0-dev.1";
+my $DATE    = "2023-05-17";
 
 sub trim;
 sub getShell;
 
 # Paths
-my $OS      = $^O;
-my $home    = glob "~";
-my $shell   = getShell;
-my $xrcfn   = ".$shell" . "rc";
+my $OS    = $^O;
+my $home  = glob "~";
+my $shell = getShell;
+my $xrcfn = "";
+
+# TODO
+my %dispatch = (
+    "bash" => sub { $xrcfn = ".bashrc" },
+    "csh"  => sub { $xrcfn = ".cshrc" },
+    "dash" => sub { $xrcfn = ".profile" },
+    "ksh"  => sub { $xrcfn = ".profile" },
+    "sh"   => sub { $xrcfn = ".profile" },
+    "tcsh" => sub { $xrcfn = ".tcshrc" },
+    "zsh"  => sub { $xrcfn = ".zshrc" },
+
+    # "fish" => sub { },
+    "" => sub { print "Your shell is currently not supported: $shell\n" }
+);
+
+if ( exists $dispatch{$shell} ) {
+    $dispatch{$shell}->();
+}
+else {
+    $dispatch{""}->();
+    exit 1;
+}
+
 my $xrc     = "$home/$xrcfn";
 my $profile = "$home/.profile";
 
@@ -96,8 +119,8 @@ if ( scalar @ARGV > 0 and $ARGV[0] =~ /$commands/ ) {
 
     # reveal
     if ( $command =~ /^(-r|-reveal|-P|-profile)$/m ) {
-        my $xrcf  = readFile( $command =~ /^(-r|-reveal)$/m ? $xrc : $profile );
         my $file  = $command =~ /^(-r|-reveal)$/m ? $xrc : $profile;
+        my $xrcf  = readFile $file;
         my @lines = split( "\n", $xrcf );
         my $line  = 0;
 
@@ -129,8 +152,8 @@ if ( scalar @ARGV > 0 and $ARGV[0] =~ /$commands/ ) {
 
     # version
     if ( $command =~ /^(-v|-version)$/m ) {
-        println
-          "pathedit version \"$VERSION\" $DATE\nhttps://github.com/arschedev/pathedit\nhttps://github.com/arschedev";
+        my $perl = trim `perl -v | grep version`;
+        println "pathedit version \"$VERSION\" $DATE\n$perl\nhttps://github.com/arschedev/pathedit";
         exit 0;
     }
 
@@ -157,8 +180,9 @@ if ( $mode !~ /^(\+|add|-|rm|--|rmf|brm)$/m ) {
 }
 
 # bashrc file
-my $xrcf     = readFile $xrc;
-my $profilef = readFile $profile;
+my $xrcf = readFile $xrc;
+
+# my $profilef = readFile $profile;
 
 # PATHEDIT
 if ( $xrcf !~ /^# PATHEDIT$/m ) {
@@ -166,10 +190,10 @@ if ( $xrcf !~ /^# PATHEDIT$/m ) {
     $xrcf = readFile $xrc;
 }
 
-if ( $profilef !~ /^# PATHEDIT$/m ) {
-    appendFile( $profile, "\n\n# PATHEDIT" );
-    $profilef = readFile $profile;
-}
+# if ( $profilef !~ /^# PATHEDIT$/m ) {
+#     appendFile( $profile, "\n\n# PATHEDIT" );
+#     $profilef = readFile $profile;
+# }
 
 # shortcuts
 if ( $mode =~ /^(\+|add|-|rm|--|rmf)$/ ) {
@@ -183,8 +207,9 @@ if ( $mode =~ /^(\+|add|-|rm|--|rmf)$/ ) {
 if ( $mode =~ /^(\+|add)$/m ) {
     my $export = "\nPATH=\$PATH:$path # add $path";
 
-    appendFile( $xrc,     $export );
-    appendFile( $profile, $export );
+    appendFile( $xrc, $export );
+
+    # appendFile( $profile, $export );
 
     println "OK (+)";
     println $message{"update_path"};
@@ -193,16 +218,20 @@ if ( $mode =~ /^(\+|add)$/m ) {
 
 # remove
 if ( $mode =~ /^(-|rm)$/m ) {
-    if ( $xrcf !~ /\nPATH=\$PATH:\Q${path}\E\/? #.+$/gm && $profilef !~ /\nPATH=\$PATH:\Q${path}\E\/? #.+$/gm ) {
+
+    # if ( $xrcf !~ /\nPATH=\$PATH:\Q${path}\E\/? #.+$/gm && $profilef !~ /\nPATH=\$PATH:\Q${path}\E\/? #.+$/gm ) {
+    if ( $xrcf !~ /\nPATH=\$PATH:\Q${path}\E\/? #.+$/gm ) {
         println "Not Found (-)";
         exit 2;
     }
 
-    $xrcf     =~ s/\nPATH=\$PATH:\Q${path}\E\/? #.+$//gm;
-    $profilef =~ s/\nPATH=\$PATH:\Q${path}\E\/? #.+$//gm;
+    $xrcf =~ s/\nPATH=\$PATH:\Q${path}\E\/? #.+$//gm;
 
-    writeFile( $xrc,     $xrcf );
-    writeFile( $profile, $profilef );
+    # $profilef =~ s/\nPATH=\$PATH:\Q${path}\E\/? #.+$//gm;
+
+    writeFile( $xrc, $xrcf );
+
+    # writeFile( $profile, $profilef );
 
     println "OK (-)";
     println $message{"re_login"};
@@ -218,8 +247,9 @@ if ( $mode =~ /^(--|rmf)$/m ) {
 
     my $export = "\nPATH=\${PATH/':$path'/} # rmf $path";
 
-    appendFile( $xrc,     $export );
-    appendFile( $profile, $export );
+    appendFile( $xrc, $export );
+
+    # appendFile( $profile, $export );
 
     println "OK (--)";
     println $message{"re_login"};
@@ -246,8 +276,9 @@ if ( $mode =~ /^brm$/m ) {
     if ( $res == 1 ) {
         my $export = "\nPATH=\${PATH/':$dir'/} # brm $path";
 
-        appendFile( $xrc,     $export );
-        appendFile( $profile, $export );
+        appendFile( $xrc, $export );
+
+        # appendFile( $profile, $export );
 
         println "OK (brm)";
         println $message{"re_login"};
