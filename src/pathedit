@@ -2,42 +2,8 @@
 use strict;
 use warnings;
 
-my $VERSION = "1.3.0-dev.1";
-my $DATE    = "2023-05-17";
-
-sub trim;
-sub getShell;
-
-# Paths
-my $OS    = $^O;
-my $home  = glob "~";
-my $shell = getShell;
-my $xrcfn = "";
-
-# TODO
-my %dispatch = (
-    "bash" => sub { $xrcfn = ".bashrc" },
-    "csh"  => sub { $xrcfn = ".cshrc" },
-    "dash" => sub { $xrcfn = ".profile" },
-    "ksh"  => sub { $xrcfn = ".profile" },
-    "sh"   => sub { $xrcfn = ".profile" },
-    "tcsh" => sub { $xrcfn = ".tcshrc" },
-    "zsh"  => sub { $xrcfn = ".zshrc" },
-
-    # "fish" => sub { },
-    "" => sub { print "Your shell is currently not supported: $shell\n" }
-);
-
-if ( exists $dispatch{$shell} ) {
-    $dispatch{$shell}->();
-}
-else {
-    $dispatch{""}->();
-    exit 1;
-}
-
-my $xrc     = "$home/$xrcfn";
-my $profile = "$home/.profile";
+my $VERSION = "1.3.0-dev.2";
+my $DATE    = "2023-05-25";
 
 # Utils
 sub println;
@@ -47,14 +13,76 @@ sub readFile;
 sub writeFile;
 sub appendFile;
 sub touchFile;
+sub trim;
 sub getDir;
 sub pathFmt;
+sub getShell;
+
+# Configuration
+my $OS      = $^O;
+my $home    = glob "~";
+my $shell   = getShell;
+my $profile = "$home/.profile";
+my $xrcfn   = "...";
 
 #
 my %message = (
-    "re_login"    => "Please re-login into your terminal to update PATH",
-    "update_path" => "Run `source ~/$xrcfn` to update PATH\nWithout logging out"
+    "re_login"    => "...",
+    "update_path" => "..."
 );
+
+# shell init file
+my %dispatch = (
+    "bash" => sub { $xrcfn = ".bashrc" },
+    "csh"  => sub { $xrcfn = ".cshrc" },
+    "dash" => sub { $xrcfn = ".shinit" },
+    "ksh"  => sub { $xrcfn = ".shinit" },
+    "sh"   => sub {
+        $xrcfn   = ".profile";
+        %message = (
+            "re_login"    => "Please re-login to apply all changes",
+            "update_path" => "Run `source ~/$xrcfn` to update PATH\nOr re-login to apply all changes"
+        );
+    },
+    "tcsh" => sub { $xrcfn = ".tcshrc" },
+    "zsh"  => sub { $xrcfn = ".zshrc" },
+
+    # "fish" => sub { },
+    "..." => sub { print "Your shell is currently not supported: $shell\n" }
+);
+
+if ( exists $dispatch{$shell} ) {
+    $dispatch{$shell}->();
+
+    # %message
+    if ( $shell !~ /^(sh|ksh|dash)$/m ) {
+        %message = (
+            "re_login"    => "Please re-login into your terminal to update PATH",
+            "update_path" => "Run `source ~/$xrcfn` to update PATH\nWithout logging out"
+        );
+    }
+
+    # .shinit
+    if ( $xrcfn eq ".shinit" ) {
+        touchFile "~/.profile";
+
+        if ( readFile($profile) !~ /# PATHEDIT\nENV=\$HOME\/\.shinit; export ENV/m ) {
+            appendFile( $profile, "\n\n# PATHEDIT\nENV=\$HOME/.shinit; export ENV" );
+        }
+
+        %message = (
+            "re_login"    => "Please re-login to apply all changes",
+            "update_path" => "Run `source ~/$xrcfn` to update PATH\nOr re-login to apply all changes"
+        );
+    }
+}
+else {
+    $dispatch{"..."}->();
+    exit 1;
+}
+
+#
+my $xrc = "$home/$xrcfn";
 
 ###
 my $ifdarwin     = "";
@@ -103,11 +131,11 @@ if ( scalar @ARGV == 0 ) {
     exit 1;
 }
 
-# create .*rc & .profile if not created
+# create .*rc or .shinit & .profile if not created
 touchFile "~/$xrcfn";
 touchFile "~/.profile";
 
-my $commands = "(-l|-list|-h|-help|-r|-reveal|-P|-profile|-v|-version)";
+my $commands = "(-l|-list|-h|-help|-r|-reveal|-P|-profile|-v|-version|-V)";
 if ( scalar @ARGV > 0 and $ARGV[0] =~ /$commands/ ) {
     my $command = $ARGV[0];
 
@@ -157,6 +185,12 @@ if ( scalar @ARGV > 0 and $ARGV[0] =~ /$commands/ ) {
         exit 0;
     }
 
+    # -V
+    if ( $command =~ /^-V$/m ) {
+        println "$VERSION";
+        exit 0;
+    }
+
     # help
     if ( $command =~ /(-h|-help)/ ) {
         my $pathedit = wrapText( "arschedev's pathedit$ifdarwin\n version $VERSION", "*" );
@@ -182,18 +216,11 @@ if ( $mode !~ /^(\+|add|-|rm|--|rmf|brm)$/m ) {
 # bashrc file
 my $xrcf = readFile $xrc;
 
-# my $profilef = readFile $profile;
-
 # PATHEDIT
 if ( $xrcf !~ /^# PATHEDIT$/m ) {
     appendFile( $xrc, "\n\n# PATHEDIT" );
     $xrcf = readFile $xrc;
 }
-
-# if ( $profilef !~ /^# PATHEDIT$/m ) {
-#     appendFile( $profile, "\n\n# PATHEDIT" );
-#     $profilef = readFile $profile;
-# }
 
 # shortcuts
 if ( $mode =~ /^(\+|add|-|rm|--|rmf)$/ ) {
@@ -209,8 +236,6 @@ if ( $mode =~ /^(\+|add)$/m ) {
 
     appendFile( $xrc, $export );
 
-    # appendFile( $profile, $export );
-
     println "OK (+)";
     println $message{"update_path"};
     exit 0;
@@ -218,8 +243,6 @@ if ( $mode =~ /^(\+|add)$/m ) {
 
 # remove
 if ( $mode =~ /^(-|rm)$/m ) {
-
-    # if ( $xrcf !~ /\nPATH=\$PATH:\Q${path}\E\/? #.+$/gm && $profilef !~ /\nPATH=\$PATH:\Q${path}\E\/? #.+$/gm ) {
     if ( $xrcf !~ /\nPATH=\$PATH:\Q${path}\E\/? #.+$/gm ) {
         println "Not Found (-)";
         exit 2;
@@ -227,11 +250,7 @@ if ( $mode =~ /^(-|rm)$/m ) {
 
     $xrcf =~ s/\nPATH=\$PATH:\Q${path}\E\/? #.+$//gm;
 
-    # $profilef =~ s/\nPATH=\$PATH:\Q${path}\E\/? #.+$//gm;
-
     writeFile( $xrc, $xrcf );
-
-    # writeFile( $profile, $profilef );
 
     println "OK (-)";
     println $message{"re_login"};
@@ -248,8 +267,6 @@ if ( $mode =~ /^(--|rmf)$/m ) {
     my $export = "\nPATH=\${PATH/':$path'/} # rmf $path";
 
     appendFile( $xrc, $export );
-
-    # appendFile( $profile, $export );
 
     println "OK (--)";
     println $message{"re_login"};
@@ -277,8 +294,6 @@ if ( $mode =~ /^brm$/m ) {
         my $export = "\nPATH=\${PATH/':$dir'/} # brm $path";
 
         appendFile( $xrc, $export );
-
-        # appendFile( $profile, $export );
 
         println "OK (brm)";
         println $message{"re_login"};
@@ -388,6 +403,7 @@ sub pathFmt {
     return join( "", @path );
 }
 
+# TODO: Refine comments
 # TODO: Refine error handling
 # TODO: Improve shell support
 # TODO: Complete macOS support
