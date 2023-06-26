@@ -1,6 +1,21 @@
 # 🧰 pathedit
 ###### PATH management tool for Linux & macOS
 
+## Supported shells
+- bash ✅
+- zsh ✅
+- csh ✔️
+- ksh ✔️
+- sh ✔️
+- tcsh ✔️
+- fish 🗓️
+
+✅ - well tested  
+✔️ - no deep test   
+🗓️ - planned
+
+> If your favorite shell didn't get support - you may create an issue with "shell request" tag, like [this](https://github.com/arschedev/pathedit/issues/2)
+
 ## Installation
 #### Universal
 ```sh
