@@ -1,6 +1,20 @@
 # 🧰 pathedit
 ###### PATH management tool for Linux & macOS
 
+## Supported shells
+- bash*
+- zsh*
+- csh
+- ksh
+- sh
+- tcsh
+- fish**
+
+\* — deep tested   
+\*\* — planned
+
+> If your favorite shell didn't get support - you may create an issue with "shell request" tag, like [this](https://github.com/arschedev/pathedit/issues/2)
+
 ## Installation
 #### Universal
 ```sh
@@ -14,7 +28,7 @@ curl https://raw.githubusercontent.com/arschedev/pathedit/main/scripts/install.s
 [📥 .deb package](https://raw.githubusercontent.com/arschedev/pathedit/main/packages/pathedit_noarch.deb)
 
 #### RedHat / Fedora
-📥 [.rpm package](https://raw.githubusercontent.com/arschedev/pathedit/main/packages/pathedit_noarch.rpm)
+[📥 .rpm package](https://raw.githubusercontent.com/arschedev/pathedit/main/packages/pathedit_noarch.rpm)
 
 #### Manually
 1. Download pathedit ([`/src/pathedit`](https://raw.githubusercontent.com/arschedev/pathedit/main/src/pathedit))
