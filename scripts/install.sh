@@ -31,7 +31,7 @@ echo "* Installing: "
         if [ -d /usr/local/bin ]; then
             echo "OK"
         else
-            echo "NG"
+            echo "NO"
             echo -n "--- Creating /usr/local/bin... "
             sudo mkdir /usr/local/bin
             echo "OK"
@@ -49,5 +49,5 @@ echo "* Installing: "
 }
 
 echo -e -n "\nSuccessfully installed "
-pathedit -v | grep version
+pathedit -v | grep "pathedit version"
 echo "..."
