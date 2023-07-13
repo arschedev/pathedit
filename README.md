@@ -10,10 +10,10 @@
 - tcsh
 - fish**
 
-\* — deep tested   
+\* — well tested  
 \*\* — planned
 
-> If your favorite shell didn't get support - you may create an issue with "shell request" tag, like [this](https://github.com/arschedev/pathedit/issues/2)
+> If your favorite shell didn't get support - you may create an issue with "shell request" tag: [#2](https://github.com/arschedev/pathedit/issues/2)
 
 ## Installation
 #### Universal
