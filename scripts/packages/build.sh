@@ -27,7 +27,7 @@ rm ../../packages/$name.rpm
 echo -e "> Remove $name.pkg.tar.zst\tpacman"
 rm ../../packages/$name.pkg.tar.zst
 if [[ "$OSTYPE" == "darwin"* ]]; then
-    echo -e "> Remove $name.pkg\t\tpkg"
+    echo -e "> Remove $name.pkg\t\tosxpkg"
     rm ../../packages/$name.pkg
 fi
 
@@ -39,6 +39,6 @@ echo -e "\n> Build $name.rpm\t\trpm"
 echo -e "\n> Build $name.pkg.tar.zst\tpacman"
 ./pacman.sh $version
 if [[ "$OSTYPE" == "darwin"* ]]; then
-    echo -e "\n> Build $name.pkg\t\tpkg"
+    echo -e "\n> Build $name.pkg\t\tosxpkg"
     ./pkg.sh $version
 fi
