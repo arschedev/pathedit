@@ -7,8 +7,8 @@
 use strict;
 use warnings;
 
-my $VERSION = "1.3.1";
-my $DATE    = "2023-07-18";
+my $VERSION = "1.3.2";
+my $DATE    = "2023-08-18";
 
 #
 # Set up
@@ -72,7 +72,7 @@ if ( exists $dispatch{$shell} ) {    # switch-case
 
     # .shinit
     if ( $xrcfn eq ".shinit" ) {     # dash, ksh
-        touchFile "~/.profile";
+        touchFile "$home/.profile";
 
         # set up .shinit
         if ( readFile($profile) !~ /# PATHEDIT\nENV=\$HOME\/\.shinit; export ENV/m ) {
@@ -85,8 +85,7 @@ if ( exists $dispatch{$shell} ) {    # switch-case
             "update_path" => "Run `source ~/$xrcfn` to update PATH\nOr re-login to apply all changes"
         );
     }
-}
-else {
+} else {
     $dispatch{"default"}->();    # default case
     exit 1;
 }
@@ -150,8 +149,8 @@ if ( scalar @ARGV == 0 ) {    # default
 }
 
 # Create shell init file or .shinit & .profile if not created
-touchFile "~/$xrcfn";
-touchFile "~/.profile";
+touchFile "$home/$xrcfn";
+touchFile "$home/.profile";
 
 ## Commands
 my $commands = "(-l|-list|-r|-reveal|-P|-profile|-v|-version|-h|-help|-V|-S)";
@@ -184,14 +183,12 @@ if ( scalar @ARGV > 0 and $ARGV[0] =~ /$commands/ ) {
         if ( $OS eq "darwin" ) {
             println "Scroll to # PATHEDIT\n";
             system "open -e $file";    # open in TextEdit
-        }
-        else {
-            my $ifgedit = `gedit -V 2>&1` ? 1 : 0;    # is gedit installed?
+        } else {
+            my $editor = `gnome-text-editor -V 2>&1` ? "gnome-text-editor" : ( `gedit -V 2>&1` ? "gedit" : 0 );
 
-            if ($ifgedit) {
-                system "gedit $file +$line";
-            }
-            else {
+            if ($editor) {
+                system "$editor $file +$line";
+            } else {
                 println "Scroll to # PATHEDIT\n";
                 system "xdg-open $file";    # open in text editor by default
             }
@@ -387,7 +384,7 @@ sub wrapText {
 sub readFile {
     my $path = $_[0];
 
-    open( my $FH, "<:encoding(UTF-8)", $path );
+    open( my $FH, "<:encoding(UTF-8)", $path ) or die "Cannot open $path: $!";
     my $file = "";
 
     while (<$FH>) {                  # iterate through each line
@@ -403,7 +400,7 @@ sub writeFile {
     my $path = $_[0];
     my $data = $_[1];
 
-    open( my $fh, ">", $path );
+    open( my $fh, ">", $path ) or die "Cannot open $path: $!";
     print $fh $data;
     close $fh;
 }
@@ -413,14 +410,18 @@ sub appendFile {
     my $path = $_[0];
     my $data = $_[1];
 
-    open( my $fh, ">>", $path );
+    open( my $fh, ">>", $path ) or die "Cannot open $path: $!";
     print $fh $data;
     close $fh;
 }
 
 #
 sub touchFile {
-    system "touch $_[0]";
+    my $file = $_[0];
+
+    unless ( -e $file ) {
+        writeFile( $file, "\n" );
+    }
 }
 
 #
