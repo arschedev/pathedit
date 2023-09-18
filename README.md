@@ -35,7 +35,7 @@ sudo pacman -U pathedit_noarch.pkg.tar.zst
 
 #### macOS
 [📥 pkg installer](https://github.com/arschedev/pathedit/raw/main/packages/pathedit_noarch.pkg)
-> The package might be outdated
+> The package might not always provide the latest version
 
 #### Manually
 1. Download pathedit ([`/src/pathedit`](https://raw.githubusercontent.com/arschedev/pathedit/main/src/pathedit))
@@ -49,38 +49,38 @@ sudo pacman -U pathedit_noarch.pkg.tar.zst
 
 ## Usage
 ```
-Usage: pathedit <mode|command> <path>
+Usage: pathedit [MODE | COMMAND] [PATH]
 
     Mode:
-	+,  add		add to PATH
-	-,  rm		remove from PATH
-	--, rmf		force remove from PATH
-	brm		remove binary path from PATH
+        +,  add		add to PATH
+        -,  rm		remove from PATH
+        --, rmf		force remove from PATH 
+        brm		remove binary path from PATH 
 
     Command:
-	-l, -list	list PATH
-	-P, -profile	reveal ~/.profile
-	-r, -reveal	reveal ~/.bashrc
-	-v, -version	print version
-	-h, -help	print this message
+        -l, -list	list PATH
+        -r, -reveal	reveal ~/.bashrc
+        -P, -profile	reveal ~/.profile
+        -v, -version	print version
+        -h, -help	print this message
 
     Shortcuts:
-	<mode> current	add/remove current directory from PATH
+        <mode> current	add/remove current directory from PATH
 
     Examples:
-	pathedit add ~/bin/jdk/bin	add ~/bin/jdk/bin to PATH
-	pathedit rm  ~/bin/jdk/bin	remove ~/bin/jdk/bin from PATH
-	pathedit rmf /usr/local/games	force remove /usr/local/games from PATH
+        pathedit add ~/bin/jdk/bin	add ~/bin/jdk/bin to PATH
+        pathedit rm  ~/bin/jdk/bin	remove ~/bin/jdk/bin from PATH
+        pathedit rmf /usr/local/games	force remove /usr/local/games from PATH
 					-> PATH=${PATH/':/usr/local/games'/}
-	pathedit brm java		remove java path from PATH
+        pathedit brm java		remove java path from PATH
 					-> force remove ~/bin/jdk/bin
-	pathedit add current		add current directory to PATH
-	pathedit rm  current		remove current directory from PATH
-	pathedit rmf current		force remove current directory from PATH
-	pathedit -list			print all directories listed in PATH
-	pathedit -profile		open ~/.profile on PATHEDIT line
-	pathedit -reveal		open ~/.bashrc on PATHEDIT line
-
+        pathedit add current		add current directory to PATH
+        pathedit rm  current		remove current directory from PATH
+        pathedit rmf current		force remove current directory from PATH
+        pathedit -list			print all directories listed in PATH
+        pathedit -profile		open ~/.profile on PATHEDIT line
+        pathedit -reveal		open ~/.bashrc on PATHEDIT line
+	
 ```
 
 ## Uninstallation
