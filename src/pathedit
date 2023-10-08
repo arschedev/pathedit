@@ -7,9 +7,9 @@
 use strict;
 use warnings;
 
-my $VERSION  = "1.4.0-dev.0";
+my $VERSION  = "1.4.0-dev.1";
 my $CODENAME = "undef";
-my $DATE     = "2023-10-07";
+my $DATE     = "2023-10-08";
 
 #
 # Set up
@@ -111,9 +111,6 @@ if ( $OS eq "darwin" ) {
 }
 
 ## Help section
-my $moretabs = "\t" x 5;    # ignore
-
-# Actual message
 my $help = "Usage: pathedit [MODE | COMMAND] [PATH]
 
     Mode:
@@ -135,8 +132,8 @@ my $help = "Usage: pathedit [MODE | COMMAND] [PATH]
     Examples:
         pathedit add ~/bin/jdk/bin\tadd ~/bin/jdk/bin to PATH
         pathedit rm  ~/bin/jdk/bin\tremove ~/bin/jdk/bin from PATH
-        pathedit rmf /usr/local/games\tforce remove /usr/local/games from PATH\n$moretabs-> PATH=\${PATH/':/usr/local/games'/}
-        pathedit brm java\t\tremove java path from PATH\n$moretabs-> force remove ~/bin/jdk/bin
+        pathedit rmf /usr/local/games\tforce remove /usr/local/games from PATH\n\t\t\t\t\t-> PATH=\${PATH/':/usr/local/games'/}
+        pathedit brm java\t\tremove java path from PATH\n\t\t\t\t\t-> force remove ~/bin/jdk/bin
         pathedit add current\t\tadd current directory to PATH
         pathedit rm  current\t\tremove current directory from PATH
         pathedit rmf current\t\tforce remove current directory from PATH
@@ -372,11 +369,13 @@ sub is {
     return 0;
 }
 
+#
 sub isNot {
     my ( $var, @values ) = @_;
     return !is( $var, @values );
 }
 
+#
 sub trim {
     my $string = $_[0];
     $string =~ s/^\s+|\s+$//g;    # remove whitespaces from both sides
@@ -448,6 +447,23 @@ sub appendFile {
 
     open( my $fh, ">>", $path ) or die "Cannot open $path: $!";
     print $fh $data;
+    close $fh;
+}
+
+#
+sub appendFileAt {
+    my $path = $_[0];
+    my $data = $_[1];
+    my $line = $_[2];
+
+    open( my $fh, "<", $path ) or die "Cannot open $path: $!";
+    my @lines = <$fh>;
+    close $fh;
+
+    splice( @lines, $line - 1, 0, $data );
+
+    open( $fh, ">", $path ) or die "Cannot open $path: $!";
+    print $fh @lines;
     close $fh;
 }
 
