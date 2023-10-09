@@ -7,9 +7,9 @@
 use strict;
 use warnings;
 
-my $VERSION  = "1.4.0-dev.1";
+my $VERSION  = "1.4.0-dev.2";
 my $CODENAME = "undef";
-my $DATE     = "2023-10-08";
+my $DATE     = "2023-10-09";
 
 #
 # Set up
@@ -26,6 +26,8 @@ sub wrapText;
 sub readFile;
 sub writeFile;
 sub appendFile;
+sub appendFileAt;
+sub findLineAtFile;
 sub touchFile;
 sub getDir;
 sub pathFmt;
@@ -167,18 +169,8 @@ if ( scalar @ARGV > 0 and $ARGV[0] =~ /^$commands$/m ) {
 
     # reveal & profile
     if ( is( $command, ( "-r", "-reveal", "-P", "-profile" ) ) ) {
-        my $file  = is( $command, ( "-r", "-reveal" ) ) ? $xrc : $profile;
-        my $xrcf  = readFile $file;
-        my @lines = split( "\n", $xrcf );
-        my $line  = 0;
-
-        # pathedit line
-        for my $i ( 0 .. $#lines ) {
-            if ( is( $lines[$i], ("# PATHEDIT") ) ) {
-                $line = $i + 1;    # assign the line number
-                last;
-            }
-        }
+        my $file = is( $command, ( "-r", "-reveal" ) ) ? $xrc : $profile;
+        my $line = findLineAtFile( $file, "# PATHEDIT" );
 
         if ( $OS eq "darwin" ) {
             println "Scroll to # PATHEDIT\n";
@@ -255,10 +247,16 @@ if ( $xrcf !~ /^# PATHEDIT$/m ) {    # don't touch
     $xrcf = readFile $xrc;           # update $xrcf
 }
 
+# export
+if ( $xrcf !~ /^export PATH #$/m ) {    # don't touch
+    appendFile( $xrc, "\nexport PATH #" );
+    $xrcf = readFile $xrc;
+}
+
 # Shortcuts
 if ( is( $mode, ( "+", "add", "-", "rm", "--", "rmf" ) ) ) {
     if ( $path eq "current" ) {
-        $path = trim `pwd`;          # present working directory
+        $path = trim `pwd`;    # present working directory
         println $path . "\n";
     }
 }
@@ -276,9 +274,9 @@ if ( is( $mode, ( "+", "add" ) ) ) {
         exit 0;
     }
 
-    my $export = "\nPATH=\$PATH:$path # add $path";
+    my $export = "PATH=\$PATH:$path # add $path\n";
 
-    appendFile( $xrc, $export );    # append export line
+    appendFileAt( $xrc, $export, findLineAtFile( $xrc, "export PATH #" ) );    # append export line
 
     println "OK (add)";
     println $message{"update_path"};
@@ -308,9 +306,9 @@ if ( is( $mode, ( "--", "rmf" ) ) ) {
         exit 1;
     }
 
-    my $export = "\nPATH=\${PATH/':$path'/} # rmf $path";
+    my $export = "PATH=\${PATH/':$path'/} # rmf $path\n";
 
-    appendFile( $xrc, $export );    # append export line
+    appendFileAt( $xrc, $export, findLineAtFile( $xrc, "export PATH #" ) );    # append export line
 
     println "OK (rmf)";
     println $message{"re_login"};
@@ -341,8 +339,8 @@ if ( is( $mode, ("brm") ) ) {
             $xrcf =~ s/\nPATH=\$PATH:\Q${dir}\E\/? #.+$//gm;    # rm
             writeFile( $xrc, $xrcf );                           # apply changes
         } else {
-            my $export = "\nPATH=\${PATH/':$dir'/} # brm $path";    # rmf
-            appendFile( $xrc, $export );                            # append export line
+            my $export = "PATH=\${PATH/':$dir'/} # brm $path\n";                       # rmf
+            appendFileAt( $xrc, $export, findLineAtFile( $xrc, "export PATH #" ) );    # append export line
         }
 
         println "OK (brm)";
@@ -468,6 +466,25 @@ sub appendFileAt {
 }
 
 #
+sub findLineAtFile {
+    my $path  = $_[0];
+    my $query = $_[1];
+
+    my $file  = readFile $path;
+    my @lines = split( "\n", $file );
+    my $line  = 0;
+
+    for my $i ( 0 .. $#lines ) {
+        if ( is( $lines[$i], ($query) ) ) {
+            $line = $i + 1;
+            last;
+        }
+    }
+
+    return $line;
+}
+
+#
 sub touchFile {
     my $file = $_[0];
 
@@ -497,5 +514,6 @@ sub pathFmt {
     return join( "", @path );
 }
 
+# TODO: Move exports to the end
 # TODO: Refine error handling
 # TODO: Complete macOS support
