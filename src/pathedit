@@ -7,7 +7,7 @@
 use strict;
 use warnings;
 
-my $VERSION  = "1.4.0-dev.4";
+my $VERSION  = "1.4.0-dev.5";
 my $CODENAME = "undef";
 my $DATE     = "2023-10-13";
 
@@ -274,13 +274,30 @@ if ( is( $mode, ( "+", "add", "-", "rm", "--", "rmf" ) ) ) {
     }
 }
 
+# Move to the end
+sub update {
+    open( my $fh, "<", $rcFilePath ) or die "Cannot open $rcFilePath: $!";
+    my @lines = <$fh>;    # get lines
+    close $fh;
+
+    my $start  = findLineAtFile( $rcFilePath, "# PATHEDIT" );
+    my $finish = findLineAtFile( $rcFilePath, "export PATH #" );
+    my $i      = $lines[ $start - 2 ] eq "\n" ? 2 : 1;
+    my @chunk  = splice( @lines, $start - $i, $finish - $start + $i );
+
+    open( $fh, ">", $rcFilePath ) or die "Cannot open $rcFilePath: $!";
+    print $fh @lines;
+    print $fh @chunk;
+    close $fh;
+}
+
 # add
 if ( is( $mode, ( "+", "add" ) ) ) {
 
     # removing trace of rmf
     if ( $rcFileData =~ /\nPATH=\$\{PATH\/\':\Q${path}\E\/?\'\/\} #.+$/gm ) {
         $rcFileData =~ s/\nPATH=\$\{PATH\/\':\Q${path}\E\/?\'\/\} #.+$//gm;
-        writeFile( $rcFilePath, $rcFileData );
+        writeFile( $rcFilePath, $rcFileData );    # apply changes
 
         println "OK (add)";
         println $completeMessage{"re_login"};
@@ -290,6 +307,7 @@ if ( is( $mode, ( "+", "add" ) ) ) {
     my $export = "PATH=\$PATH:$path # add $path\n";
 
     appendFileAt( $rcFilePath, $export, findLineAtFile( $rcFilePath, "export PATH #" ) );    # append export line
+    update();
 
     println "OK (add)";
     println $completeMessage{"update_path"};
@@ -303,9 +321,10 @@ if ( is( $mode, ( "-", "rm" ) ) ) {
         exit 2;
     }
 
-    $rcFileData =~ s/\nPATH=\$PATH:\Q${path}\E\/? #.+$//gm;    # remove requested export line
+    $rcFileData =~ s/\nPATH=\$PATH:\Q${path}\E\/? #.+$//gm;    # remove export line
 
     writeFile( $rcFilePath, $rcFileData );                     # apply changes
+    update();
 
     println "OK (rm)";
     println $completeMessage{"re_login"};
@@ -314,6 +333,8 @@ if ( is( $mode, ( "-", "rm" ) ) ) {
 
 # force remove
 if ( is( $mode, ( "--", "rmf" ) ) ) {
+
+    # mac
     if ( $OS eq "darwin" ) {
         println "Not supported (rmf on macOS)\n";
         exit 1;
@@ -322,6 +343,7 @@ if ( is( $mode, ( "--", "rmf" ) ) ) {
     my $export = "PATH=\${PATH/':$path'/} # rmf $path\n";
 
     appendFileAt( $rcFilePath, $export, findLineAtFile( $rcFilePath, "export PATH #" ) );    # append export line
+    update();
 
     println "OK (rmf)";
     println $completeMessage{"re_login"};
@@ -330,6 +352,8 @@ if ( is( $mode, ( "--", "rmf" ) ) ) {
 
 # binary path remove
 if ( is( $mode, ("brm") ) ) {
+
+    # mac
     if ( $OS eq "darwin" ) {
         println "Not supported (brm on macOS)\n";
         exit 1;
@@ -355,6 +379,8 @@ if ( is( $mode, ("brm") ) ) {
             my $export = "PATH=\${PATH/':$dir'/} # brm $path\n";                                    # rmf
             appendFileAt( $rcFilePath, $export, findLineAtFile( $rcFilePath, "export PATH #" ) );   # append export line
         }
+
+        update();
 
         println "OK (brm)";
         println $completeMessage{"re_login"};
@@ -527,6 +553,5 @@ sub pathFmt {
     return join( "", @path );
 }
 
-# TODO: Move exports to the end
 # TODO: Refine error handling
 # TODO: Complete macOS support
