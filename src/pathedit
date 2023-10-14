@@ -7,8 +7,8 @@
 use strict;
 use warnings;
 
-my $VERSION  = "1.4.0-dev.5";
-my $CODENAME = "undef";
+my $VERSION  = "1.4.0";
+my $CODENAME = "chunk";
 my $DATE     = "2023-10-13";
 
 #
@@ -143,7 +143,7 @@ my $help = "Usage: pathedit [MODE | COMMAND] [PATH]
 ## CLI
 #
 
-# Default
+# pathedit
 if ( scalar @ARGV == 0 ) {
     my $pathedit = wrapText( "arschedev's pathedit$if_darwin\n version $VERSION \"$CODENAME\"", "*" );
     println $pathedit . "\n" . $help;
