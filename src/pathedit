@@ -7,122 +7,119 @@
 use strict;
 use warnings;
 
-my $VERSION  = "1.3.3";
-my $CODENAME = "shells";
-my $DATE     = "2023-09-18";
+my $VERSION  = "1.4.0";
+my $CODENAME = "chunk";
+my $DATE     = "2023-10-13";
 
 #
-# Set up
+## Set up
 #
 
 ## Utilities
+sub is;
+sub isNot;
+sub trim;
+sub getShell;
 sub println;
 sub confirm;
 sub wrapText;
 sub readFile;
 sub writeFile;
 sub appendFile;
+sub appendFileAt;
+sub findLineAtFile;
 sub touchFile;
-sub trim;
 sub getDir;
 sub pathFmt;
-sub getShell;
 
 ## Configuration
-my $OS      = $^O;
-my $home    = glob "~";            # /home/arschedev
-my $shell   = getShell;            # $SHELL
-my $profile = "$home/.profile";    # .profile path
-my $xrcfn   = "";                  # shell init file name
+my $OS          = $^O;
+my $home        = glob "~";            # /home/arschedev
+my $shell       = getShell;            # $SHELL
+my $profilePath = "$home/.profile";    # .profile path
+my $rcFile      = "";                  # rc file
 
-## End messages
-my %message = (
+## Messages
+my %completeMessage = (
     "re_login"    => "",
     "update_path" => ""
 );
 
-## What shell init file
-my %dispatch = (                   # switch-case
-    "bash" => sub { $xrcfn = ".bashrc" },
-    "csh"  => sub { $xrcfn = ".cshrc" },
-    "dash" => sub { $xrcfn = ".shinit" },
-    "ksh"  => sub { $xrcfn = ".shinit" },
-    "sh"   => sub {
-        $xrcfn   = ".profile";
-        %message = (
-            "re_login"    => "Please re-login to apply all changes",
-            "update_path" => "Run `source ~/$xrcfn` to update PATH\nOr re-login to apply all changes"
-        );
-    },
-    "tcsh"    => sub { $xrcfn = ".tcshrc" },
-    "zsh"     => sub { $xrcfn = ".zshrc" },
+## Table
+my %rcFileTable = (
+    "bash"    => sub { $rcFile = ".bashrc" },
+    "csh"     => sub { $rcFile = ".cshrc" },
+    "dash"    => sub { $rcFile = ".shinit" },
+    "ksh"     => sub { $rcFile = ".shinit" },
+    "sh"      => sub { $rcFile = ".profile" },
+    "tcsh"    => sub { $rcFile = ".tcshrc" },
+    "zsh"     => sub { $rcFile = ".zshrc" },
     "default" => sub { print "Your shell is currently not supported: $shell\n" }
 );
 
-# Then what to do
-if ( exists $dispatch{$shell} ) {    # switch-case
-    $dispatch{$shell}->();           # switch-case
-
-    # default end message
-    if ( $shell !~ /^(sh|ksh|dash)$/m ) {
-        %message = (
-            "re_login"    => "Please re-login into your terminal to update PATH",
-            "update_path" => "Run `source ~/$xrcfn` to update PATH\nWithout logging out"
-        );
-    }
+# ...
+if ( exists $rcFileTable{$shell} ) {
+    $rcFileTable{$shell}->();
 
     # .shinit
-    if ( $xrcfn eq ".shinit" ) {     # dash, ksh
+    if ( $rcFile eq ".shinit" ) {    # dash, ksh
         touchFile "$home/.profile";
 
         # set up .shinit
-        if ( readFile($profile) !~ /# PATHEDIT\nENV=\$HOME\/\.shinit; export ENV/m ) {
-            appendFile( $profile, "\n\n# PATHEDIT\nENV=\$HOME/.shinit; export ENV" );    # set ENV
+        if ( readFile($profilePath) !~ /# PATHEDIT\nENV=\$HOME\/\.shinit; export ENV/m ) {
+            appendFile( $profilePath, "\n\n# PATHEDIT\nENV=\$HOME/.shinit; export ENV" );    # set ENV
         }
+    }
 
-        # specific end message
-        %message = (
+    # sh, dash, ksh specific messages
+    if ( is( $shell, ( "sh", "dash", "ksh" ) ) ) {
+        %completeMessage = (
             "re_login"    => "Please re-login to apply all changes",
-            "update_path" => "Run `source ~/$xrcfn` to update PATH\nOr re-login to apply all changes"
+            "update_path" => "Run `source ~/$rcFile` to update PATH\nOr re-login to apply all changes"
+        );
+    }
+
+    # default messages
+    if ( isNot( $shell, ( "sh", "dash", "ksh" ) ) ) {
+        %completeMessage = (
+            "re_login"    => "Please re-login into your terminal to update PATH",
+            "update_path" => "Run `source ~/$rcFile` to update PATH\nWithout logging out"
         );
     }
 } else {
-    $dispatch{"default"}->();    # default case
+    $rcFileTable{"default"}->();    # default case
     exit 1;
 }
 
-# Final shell init file path
-my $xrc = "$home/$xrcfn";
+# final rc file path
+my $rcFilePath = "$home/$rcFile";
 
 #
-# Main section
+## Help
 #
 
-# If linux
-my $ifdarwin     = "";
-my $notsupported = "";
+# linux
+my $if_darwin     = "";
+my $not_supported = "";
 
-# If mac
+# mac
 if ( $OS eq "darwin" ) {
-    $notsupported = "(not supported)";
-    $ifdarwin     = " for mac";
+    $if_darwin     = " for mac";
+    $not_supported = "(not supported)";
 }
 
-## Help section
-my $moretabs = "\t" x 5;    # ignore
-
-# Actual message
+## help
 my $help = "Usage: pathedit [MODE | COMMAND] [PATH]
 
     Mode:
         +,  add\t\tadd to PATH
         -,  rm\t\tremove from PATH
-        --, rmf\t\tforce remove from PATH $notsupported
-        brm\t\tremove binary path from PATH $notsupported
+        --, rmf\t\tforce remove from PATH $not_supported
+        brm\t\tremove binary path from PATH $not_supported
 
     Command:
         -l, -list\tlist PATH
-        -r, -reveal\treveal ~/$xrcfn
+        -r, -reveal\treveal ~/$rcFile
         -P, -profile\treveal ~/.profile
         -v, -version\tprint version
         -h, -help\tprint this message
@@ -133,65 +130,69 @@ my $help = "Usage: pathedit [MODE | COMMAND] [PATH]
     Examples:
         pathedit add ~/bin/jdk/bin\tadd ~/bin/jdk/bin to PATH
         pathedit rm  ~/bin/jdk/bin\tremove ~/bin/jdk/bin from PATH
-        pathedit rmf /usr/local/games\tforce remove /usr/local/games from PATH\n$moretabs-> PATH=\${PATH/':/usr/local/games'/}
-        pathedit brm java\t\tremove java path from PATH\n$moretabs-> force remove ~/bin/jdk/bin
+        pathedit rmf /usr/local/games\tforce remove /usr/local/games from PATH\n\t\t\t\t\t-> PATH=\${PATH/':/usr/local/games'/}
+        pathedit brm java\t\tremove java path from PATH\n\t\t\t\t\t-> force remove ~/bin/jdk/bin
         pathedit add current\t\tadd current directory to PATH
         pathedit rm  current\t\tremove current directory from PATH
         pathedit rmf current\t\tforce remove current directory from PATH
         pathedit -list\t\t\tprint all directories listed in PATH
         pathedit -profile\t\topen ~/.profile on PATHEDIT line
-        pathedit -reveal\t\topen ~/$xrcfn on PATHEDIT line\n\t";
+        pathedit -reveal\t\topen ~/$rcFile on PATHEDIT line\n\t";
 
-### CLI
-if ( scalar @ARGV == 0 ) {    # default
-    my $pathedit = wrapText( "arschedev's pathedit$ifdarwin\n version $VERSION \"$CODENAME\"", "*" );
+#
+## CLI
+#
+
+# pathedit
+if ( scalar @ARGV == 0 ) {
+    my $pathedit = wrapText( "arschedev's pathedit$if_darwin\n version $VERSION \"$CODENAME\"", "*" );
     println $pathedit . "\n" . $help;
     exit 1;
 }
 
-# Create shell init file or .shinit & .profile if not created
-touchFile "$home/$xrcfn";
+# Create rc file & .profile if not created
+touchFile "$home/$rcFile";
 touchFile "$home/.profile";
 
-## Commands
+#
+# Commands
+#
+
+# regex
 my $commands = "(-l|-list|-r|-reveal|-P|-profile|-v|-version|-h|-help|-V|-S)";
 
-# If a command
-if ( scalar @ARGV > 0 and $ARGV[0] =~ /$commands/ ) {
+# if a command
+if ( scalar @ARGV > 0 and $ARGV[0] =~ /^$commands$/m ) {
     my $command = $ARGV[0];    #
 
     # list
-    if ( $command =~ /^(-l|-list)$/m ) {
+    if ( is( $command, ( "-l", "-list" ) ) ) {
         println join( "\n", split( ":", `echo \$PATH` ) );
         exit 0;
     }
 
     # reveal & profile
-    if ( $command =~ /^(-r|-reveal|-P|-profile)$/m ) {
-        my $file  = $command =~ /^(-r|-reveal)$/m ? $xrc : $profile;
-        my $xrcf  = readFile $file;
-        my @lines = split( "\n", $xrcf );
-        my $line  = 0;                                                 # the line
+    if ( is( $command, ( "-r", "-reveal", "-P", "-profile" ) ) ) {
+        my $file = is( $command, ( "-r", "-reveal" ) ) ? $rcFilePath : $profilePath;    # rc file or .profile
+        my $line = findLineAtFile( $file, "# PATHEDIT" );                               # pathedit line
 
-        # pathedit line
-        for my $i ( 0 .. $#lines ) {
-            if ( $lines[$i] =~ /^# PATHEDIT$/m ) {
-                $line = $i + 1;    # assign the line number
-                last;
-            }
-        }
-
+        # mac
         if ( $OS eq "darwin" ) {
             println "Scroll to # PATHEDIT\n";
-            system "open -e $file";    # open in TextEdit
+            system "open -e $file";                                                     # open in TextEdit
         } else {
-            my $editor = `gnome-text-editor -V 2>&1` ? "gnome-text-editor" : ( `gedit -V 2>&1` ? "gedit" : 0 );
+
+            # linux
+            my $editor =
+                `gnome-text-editor -V 2>&1`
+              ? "gnome-text-editor"
+              : ( `gedit -V 2>&1` ? "gedit" : 0 );                                      # gnome-text-editor or gedit
 
             if ($editor) {
                 system "$editor $file +$line";
             } else {
                 println "Scroll to # PATHEDIT\n";
-                system "xdg-open $file";    # open in text editor by default
+                system "xdg-open $file";                                                # open in default text editor
             }
         }
 
@@ -199,44 +200,47 @@ if ( scalar @ARGV > 0 and $ARGV[0] =~ /$commands/ ) {
     }
 
     # version
-    if ( $command =~ /^(-v|-version)$/m ) {
-        my $perl = trim `perl -v | grep version`;    # perl quick info
+    if ( is( $command, ( "-v", "-version" ) ) ) {
+        my $perl = trim `perl -v | grep version`;    # perl version
         println "pathedit version \"$VERSION\" ($CODENAME) $DATE\n$perl\nhttps://github.com/arschedev/pathedit";
         exit 0;
     }
 
     # help
-    if ( $command =~ /(-h|-help)/ ) {
-        my $pathedit = wrapText( "arschedev's pathedit$ifdarwin\n version $VERSION \"$CODENAME\"", "*" );
+    if ( $command =~ /(-h|-help)/ ) {                #!
+        my $pathedit = wrapText( "arschedev's pathedit$if_darwin\n version $VERSION \"$CODENAME\"", "*" );
         println $pathedit . "\n" . $help;
         exit 0;
     }
 
     # -V
-    if ( $command =~ /^-V$/m ) {
+    if ( is( $command, ("-V") ) ) {
         println "$VERSION";
         exit 0;
     }
 
     # -S
-    if ( $command =~ /^-S$/m ) {
-        println $xrcfn;
+    if ( is( $command, ("-S") ) ) {
+        println $rcFile;
         exit 0;
     }
 }
 
-# Then if not a command
+# if not a command
 if ( scalar @ARGV < 2 ) {
     println wrapText( "Error: no such command\n Error: too few arguments", "=" ) . "\n" . $help;
     exit 1;
 }
 
-## Modes
-my $mode = $ARGV[0];            #
-my $path = pathFmt $ARGV[1];    # remove rest /
+#
+# Modes
+#
 
-# If not a mode
-if ( $mode !~ /^(\+|add|-|rm|--|rmf|brm)$/m ) {    # +|add|-|rm|--|rmf
+my $mode = $ARGV[0];            #
+my $path = pathFmt $ARGV[1];    # remove unnecessary /
+
+# if not a mode
+if ( isNot( $mode, ( "+", "add", "-", "rm", "--", "rmf", "brm" ) ) ) {
     println wrapText( "Error: no such mode...\n Error: `$mode` not found", "=" ) . "\n" . $help;
     exit 1;
 }
@@ -247,79 +251,109 @@ if ( $path =~ m/\:/ ) {
     exit 2;
 }
 
-# Read shell init file
-my $xrcf = readFile $xrc;
+# Read rc file
+my $rcFileData = readFile $rcFilePath;
 
 # PATHEDIT
-if ( $xrcf !~ /^# PATHEDIT$/m ) {
-    appendFile( $xrc, "\n\n# PATHEDIT" );
-    $xrcf = readFile $xrc;    # update $xrcf
+if ( $rcFileData !~ /^# PATHEDIT$/m ) {    #!
+    appendFile( $rcFilePath, "\n\n# PATHEDIT" );
+    $rcFileData = readFile $rcFilePath;    # update
+}
+
+# export
+if ( $rcFileData !~ /^export PATH #$/m ) {    #!
+    appendFile( $rcFilePath, "\nexport PATH #" );
+    $rcFileData = readFile $rcFilePath;       # update
 }
 
 # Shortcuts
-if ( $mode =~ /^(\+|add|-|rm|--|rmf)$/ ) {
+if ( is( $mode, ( "+", "add", "-", "rm", "--", "rmf" ) ) ) {
     if ( $path eq "current" ) {
-        $path = trim `pwd`;    # present working directory
+        $path = trim `pwd`;                   # present working directory
         println $path . "\n";
     }
 }
 
+# Move to the end
+sub update {
+    open( my $fh, "<", $rcFilePath ) or die "Cannot open $rcFilePath: $!";
+    my @lines = <$fh>;    # get lines
+    close $fh;
+
+    my $start  = findLineAtFile( $rcFilePath, "# PATHEDIT" );
+    my $finish = findLineAtFile( $rcFilePath, "export PATH #" );
+    my $i      = $lines[ $start - 2 ] eq "\n" ? 2 : 1;
+    my @chunk  = splice( @lines, $start - $i, $finish - $start + $i );
+
+    open( $fh, ">", $rcFilePath ) or die "Cannot open $rcFilePath: $!";
+    print $fh @lines;
+    print $fh @chunk;
+    close $fh;
+}
+
 # add
-if ( $mode =~ /^(\+|add)$/m ) {
+if ( is( $mode, ( "+", "add" ) ) ) {
 
     # removing trace of rmf
-    if ( $xrcf =~ /\nPATH=\$\{PATH\/\':\Q${path}\E\/?\'\/\} #.+$/gm ) {
-        $xrcf =~ s/\nPATH=\$\{PATH\/\':\Q${path}\E\/?\'\/\} #.+$//gm;
-        writeFile( $xrc, $xrcf );
+    if ( $rcFileData =~ /\nPATH=\$\{PATH\/\':\Q${path}\E\/?\'\/\} #.+$/gm ) {
+        $rcFileData =~ s/\nPATH=\$\{PATH\/\':\Q${path}\E\/?\'\/\} #.+$//gm;
+        writeFile( $rcFilePath, $rcFileData );    # apply changes
 
         println "OK (add)";
-        println $message{"re_login"};
+        println $completeMessage{"re_login"};
         exit 0;
     }
 
-    my $export = "\nPATH=\$PATH:$path # add $path";
+    my $export = "PATH=\$PATH:$path # add $path\n";
 
-    appendFile( $xrc, $export );    # append export line
+    appendFileAt( $rcFilePath, $export, findLineAtFile( $rcFilePath, "export PATH #" ) );    # append export line
+    update();
 
     println "OK (add)";
-    println $message{"update_path"};
+    println $completeMessage{"update_path"};
     exit 0;
 }
 
 # remove
-if ( $mode =~ /^(-|rm)$/m ) {
-    if ( $xrcf !~ /\nPATH=\$PATH:\Q${path}\E\/? #.+$/gm ) {
+if ( is( $mode, ( "-", "rm" ) ) ) {
+    if ( $rcFileData !~ /\nPATH=\$PATH:\Q${path}\E\/? #.+$/gm ) {
         println "Not Found (rm)";
         exit 2;
     }
 
-    $xrcf =~ s/\nPATH=\$PATH:\Q${path}\E\/? #.+$//gm;    # remove requested export line
+    $rcFileData =~ s/\nPATH=\$PATH:\Q${path}\E\/? #.+$//gm;    # remove export line
 
-    writeFile( $xrc, $xrcf );                            # apply changes
+    writeFile( $rcFilePath, $rcFileData );                     # apply changes
+    update();
 
     println "OK (rm)";
-    println $message{"re_login"};
+    println $completeMessage{"re_login"};
     exit 0;
 }
 
 # force remove
-if ( $mode =~ /^(--|rmf)$/m ) {
+if ( is( $mode, ( "--", "rmf" ) ) ) {
+
+    # mac
     if ( $OS eq "darwin" ) {
         println "Not supported (rmf on macOS)\n";
         exit 1;
     }
 
-    my $export = "\nPATH=\${PATH/':$path'/} # rmf $path";
+    my $export = "PATH=\${PATH/':$path'/} # rmf $path\n";
 
-    appendFile( $xrc, $export );    # append export line
+    appendFileAt( $rcFilePath, $export, findLineAtFile( $rcFilePath, "export PATH #" ) );    # append export line
+    update();
 
     println "OK (rmf)";
-    println $message{"re_login"};
+    println $completeMessage{"re_login"};
     exit 0;
 }
 
 # binary path remove
-if ( $mode =~ /^brm$/m ) {
+if ( is( $mode, ("brm") ) ) {
+
+    # mac
     if ( $OS eq "darwin" ) {
         println "Not supported (brm on macOS)\n";
         exit 1;
@@ -338,16 +372,18 @@ if ( $mode =~ /^brm$/m ) {
 
     # Removal
     if ( $res == 1 ) {
-        if ( $xrcf =~ /\nPATH=\$PATH:\Q${dir}\E\/? #.+$/gm ) {
-            $xrcf =~ s/\nPATH=\$PATH:\Q${dir}\E\/? #.+$//gm;    # rm
-            writeFile( $xrc, $xrcf );                           # apply changes
+        if ( $rcFileData =~ /\nPATH=\$PATH:\Q${dir}\E\/? #.+$/gm ) {
+            $rcFileData =~ s/\nPATH=\$PATH:\Q${dir}\E\/? #.+$//gm;    # rm
+            writeFile( $rcFilePath, $rcFileData );                    # apply changes
         } else {
-            my $export = "\nPATH=\${PATH/':$dir'/} # brm $path";    # rmf
-            appendFile( $xrc, $export );                            # append export line
+            my $export = "PATH=\${PATH/':$dir'/} # brm $path\n";                                    # rmf
+            appendFileAt( $rcFilePath, $export, findLineAtFile( $rcFilePath, "export PATH #" ) );   # append export line
         }
 
+        update();
+
         println "OK (brm)";
-        println $message{"re_login"};
+        println $completeMessage{"re_login"};
         exit 0;
     }
 
@@ -358,16 +394,35 @@ if ( $mode =~ /^brm$/m ) {
 # Utilities
 #
 
+sub is {
+    my ( $var, @values ) = @_;
+
+    foreach my $value (@values) {
+        if ( $var eq $value ) {
+            return 1;
+        }
+    }
+
+    return 0;
+}
+
+#
+sub isNot {
+    my ( $var, @values ) = @_;
+    return !is( $var, @values );
+}
+
+#
 sub trim {
     my $string = $_[0];
-    $string =~ s/^\s+|\s+$//g;    # remove whitespaces from both sides
+    $string =~ s/^\s+|\s+$//g;    # remove whitespaces from the sides
     return $string;
 }
 
 #
 sub getShell {
     my @path = split( "/", `echo \$SHELL` );
-    return trim $path[-1];        # return last token / shell name
+    return trim $path[-1];        # return last token - shell name
 }
 
 #
@@ -378,7 +433,7 @@ sub println {
 #
 sub confirm {
     while (1) {
-        print "OK? (y/n) ";
+        print "Confirm? (y/n) ";
         my $res = <STDIN>;
 
         return 1 if ( $res =~ /^[yY]$/m );
@@ -391,8 +446,8 @@ sub wrapText {
     my $text    = $_[0];
     my $wrapper = $_[1];
 
-    my $len  = length($text) + 2;    # text length + 2 whitespaces on the sides
-    my $wrap = $wrapper x $len;      # repeat wrapper len times
+    my $len  = length($text) + 2;    # $text length plus 2 additional whitespaces on the sides
+    my $wrap = $wrapper x $len;      # repeat $wrapper $len times
 
     return "$wrap\n $text\n$wrap\n";
 }
@@ -404,8 +459,8 @@ sub readFile {
     open( my $FH, "<:encoding(UTF-8)", $path ) or die "Cannot open $path: $!";
     my $file = "";
 
-    while (<$FH>) {                  # iterate through each line
-        $file = $file . $_;          # accumulate lines
+    while (<$FH>) {                  # go through each line
+        $file = $file . $_;          # combine lines
     }
 
     close $FH;
@@ -418,7 +473,7 @@ sub writeFile {
     my $data = $_[1];
 
     open( my $fh, ">", $path ) or die "Cannot open $path: $!";
-    print $fh $data;
+    print $fh $data;    # write $data to the file
     close $fh;
 }
 
@@ -428,8 +483,44 @@ sub appendFile {
     my $data = $_[1];
 
     open( my $fh, ">>", $path ) or die "Cannot open $path: $!";
-    print $fh $data;
+    print $fh $data;    # append $data to the file
     close $fh;
+}
+
+#
+sub appendFileAt {
+    my $path = $_[0];
+    my $data = $_[1];
+    my $line = $_[2];
+
+    open( my $fh, "<", $path ) or die "Cannot open $path: $!";
+    my @lines = <$fh>;    # get lines
+    close $fh;
+
+    splice( @lines, $line - 1, 0, $data );    # insert $data into specified line
+
+    open( $fh, ">", $path ) or die "Cannot open $path: $!";
+    print $fh @lines;                         # write @lines to the file
+    close $fh;
+}
+
+#
+sub findLineAtFile {
+    my $path  = $_[0];
+    my $query = $_[1];
+
+    my $file  = readFile $path;
+    my @lines = split( "\n", $file );         # get lines
+    my $line  = 0;
+
+    for my $i ( 0 .. $#lines ) {              # go through each line
+        if ( is( $lines[$i], ($query) ) ) {    # check for match
+            $line = $i + 1;                    # set matched line
+            last;
+        }
+    }
+
+    return $line;
 }
 
 #
@@ -456,7 +547,7 @@ sub pathFmt {
     my @path = split( "", $_[0] );
 
     if ( $path[-1] eq "/" ) {    # if last token is /
-        pop @path;               # remove it
+        pop @path;               # remove last token
     }
 
     return join( "", @path );
