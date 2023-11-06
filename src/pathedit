@@ -7,9 +7,9 @@
 use strict;
 use warnings;
 
-my $VERSION  = "1.4.0";
+my $VERSION  = "1.4.0-1";
 my $CODENAME = "chunk";
-my $DATE     = "2023-10-13";
+my $DATE     = "2023-11-06";
 
 #
 ## Set up
@@ -147,7 +147,7 @@ my $help = "Usage: pathedit [MODE | COMMAND] [PATH]
 if ( scalar @ARGV == 0 ) {
     my $pathedit = wrapText( "arschedev's pathedit$if_darwin\n version $VERSION \"$CODENAME\"", "*" );
     println $pathedit . "\n" . $help;
-    exit 1;
+    exit 0;
 }
 
 # Create rc file & .profile if not created
@@ -159,7 +159,7 @@ touchFile "$home/.profile";
 #
 
 # regex
-my $commands = "(-l|-list|-r|-reveal|-P|-profile|-v|-version|-h|-help|-V|-S)";
+my $commands = "(-l|-list|-r|-reveal|-P|-profile|-v|-version|-h|-help|--help|-V|-S)";
 
 # if a command
 if ( scalar @ARGV > 0 and $ARGV[0] =~ /^$commands$/m ) {
@@ -207,7 +207,7 @@ if ( scalar @ARGV > 0 and $ARGV[0] =~ /^$commands$/m ) {
     }
 
     # help
-    if ( $command =~ /(-h|-help)/ ) {                #!
+    if ( is( $command, ( "-h", "-help", "--help" ) ) ) {
         my $pathedit = wrapText( "arschedev's pathedit$if_darwin\n version $VERSION \"$CODENAME\"", "*" );
         println $pathedit . "\n" . $help;
         exit 0;
