@@ -24,10 +24,10 @@ curl https://raw.githubusercontent.com/arschedev/pathedit/main/scripts/install.s
 #### Debian / Ubuntu
 [📥 deb package](https://raw.githubusercontent.com/arschedev/pathedit/main/packages/pathedit_noarch.deb)
 
-#### RedHat / Fedora
+#### RedHat / Fedora / openSUSE
 [📥 rpm package](https://raw.githubusercontent.com/arschedev/pathedit/main/packages/pathedit_noarch.rpm)
 
-#### Arch Linux
+#### Arch Linux / Manjaro
 [📥 pacman package](https://raw.githubusercontent.com/arschedev/pathedit/main/packages/pathedit_noarch.pkg.tar.zst)
 ```sh
 sudo pacman -U pathedit_noarch.pkg.tar.zst
@@ -37,7 +37,7 @@ sudo pacman -U pathedit_noarch.pkg.tar.zst
 [📥 pkg installer](https://github.com/arschedev/pathedit/raw/main/packages/pathedit_noarch.pkg)
 > The package might not always provide the latest version
 
-#### Manually
+### Manually
 1. Download pathedit ([`/src/pathedit`](https://raw.githubusercontent.com/arschedev/pathedit/main/src/pathedit))
 1. Open download directory in your Terminal
 1. Type `sudo mv ./pathedit /usr/local/bin/pathedit` to make it global
