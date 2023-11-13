@@ -24,7 +24,7 @@ curl https://raw.githubusercontent.com/arschedev/pathedit/main/scripts/install.s
 #### Debian / Ubuntu
 [📥 deb package](https://raw.githubusercontent.com/arschedev/pathedit/main/packages/pathedit_noarch.deb)
 
-#### RedHat / Fedora / openSUSE
+#### Red Hat / CentOS / Fedora / openSUSE
 [📥 rpm package](https://raw.githubusercontent.com/arschedev/pathedit/main/packages/pathedit_noarch.rpm)
 
 #### Arch Linux / Manjaro
