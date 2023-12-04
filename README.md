@@ -21,7 +21,7 @@
 curl https://raw.githubusercontent.com/arschedev/pathedit/main/scripts/install.sh | bash
 ```
 
-#### Debian / Ubuntu
+#### Debian / Ubuntu / Linux Mint
 [📥 deb package](https://raw.githubusercontent.com/arschedev/pathedit/main/packages/pathedit_noarch.deb)
 
 #### Red Hat / CentOS / Fedora / openSUSE
