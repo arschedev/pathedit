@@ -33,12 +33,12 @@ fi
 
 # build new packages
 echo -e "\n> Build $name.deb\t\tdeb"
-./deb.sh $version
+./deb.sh "$version"
 echo -e "\n> Build $name.rpm\t\trpm"
-./rpm.sh $version
+./rpm.sh "$version"
 echo -e "\n> Build $name.pkg.tar.zst\tpacman"
-./pacman.sh $version
+./pacman.sh "$version"
 if [[ "$OSTYPE" == "darwin"* ]]; then
     echo -e "\n> Build $name.pkg\t\tosxpkg"
-    ./pkg.sh $version
+    ./pkg.sh "$version"
 fi
