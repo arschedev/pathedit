@@ -1,1 +1,7 @@
-theme: jekyll-theme-midnight
+remote_theme: jekyll/minima
+
+minima:
+  skin: dark
+
+plugins:
+  - jekyll-seo-tag
