@@ -3,15 +3,15 @@
 
 ## Supported shells
 
-| Shell | Support |
-|-------|---------|
-| bash  | Yes     |
-| zsh   | Yes     |
-| csh   | ✓       |
-| ksh   | ✓       |
-| sh    | ✓       |
-| tcsh  | ✓       |
-| fish  | ✘       |
+| Shell                                                  | Support |
+|--------------------------------------------------------|---------|
+| bash                                                   | Yes     |
+| zsh                                                    | Yes     |
+| csh                                                    | ✓       |
+| ksh                                                    | ✓       |
+| sh                                                     | ✓       |
+| tcsh                                                   | ✓       |
+| [fish](https://github.com/arschedev/pathedit/issues/2) | ✘       |
 
 > In case your favorite shell is not on the list — you may create an issue requesting it: [#2](https://github.com/arschedev/pathedit/issues/2)
 
