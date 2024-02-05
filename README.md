@@ -11,7 +11,7 @@
 | ksh   | ✓       |
 | sh    | ✓       |
 | tcsh  | ✓       |
-| fish  | WIP     |
+| fish  | ✘       |
 
 > In case your favorite shell is not on the list — you may create an issue requesting it: [#2](https://github.com/arschedev/pathedit/issues/2)
 
@@ -38,13 +38,15 @@ sudo pacman -U pathedit_noarch.pkg.tar.zst
 > The package might not always provide the latest version
 
 ### Manually
-1. Download pathedit ([`/src/pathedit`](https://raw.githubusercontent.com/arschedev/pathedit/main/src/pathedit))
-1. Open download directory in your Terminal
-1. Type `sudo mv ./pathedit /usr/local/bin/pathedit` to make it global
-1. Then `sudo chmod +x /usr/local/bin/pathedit` to mark it as executable
-1. `pathedit` was successfully installed!
+```sh
+git clone https://github.com/arschedev/pathedit.git
+cd pathedit
+sudo mv ./src/pathedit /usr/local/bin/pathedit
+sudo chmod +x /usr/local/bin/pathedit
+rm -rf ../pathedit
+```
 
-#### Previous Releases
+#### Previous releases
 [🔗 Releases](https://github.com/arschedev/pathedit/releases)
 
 ## Usage
