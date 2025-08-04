@@ -7,9 +7,9 @@
 use strict;
 use warnings;
 
-my $VERSION  = "1.5.0-dev.0";
+my $VERSION  = "1.5.0-dev.1";
 my $CODENAME = "sequoia";
-my $DATE     = "2025-08-03";
+my $DATE     = "2025-08-04";
 
 #
 ## Set up
@@ -147,8 +147,8 @@ my $help = "Usage: pathedit [MODE | COMMAND] [PATH]
         pathedit rm  current\t\tremove current directory from PATH
         pathedit rmf current\t\tforce remove current directory from PATH
         pathedit -list\t\t\tprint all directories listed in PATH
-        pathedit -profile\t\topen ~/.profile on PATHEDIT line
-        pathedit -reveal\t\topen ~/$rcFile on PATHEDIT line\n\t";
+        pathedit -profile\t\topen ~/.profile at PATHEDIT line
+        pathedit -reveal\t\topen ~/$rcFile at PATHEDIT line\n\t";
 
 #
 ## CLI
@@ -307,8 +307,8 @@ sub update {
 if ( is( $mode, ( "+", "add" ) ) ) {
 
     # removing trace of rmf
-    if ( $rcFileData =~ /\nPATH=\$\{PATH\/\/:\Q${safe_path}\E\/\} #.+$/gm ) {
-        $rcFileData =~ s/\nPATH=\$\{PATH\/\/:\Q${safe_path}\E\/\} #.+$//gm;
+    if ( $rcFileData =~ /\nPATH=\$\{PATH\/\/:?\Q${safe_path}\E:?\/\} #.+$/gm ) {
+        $rcFileData =~ s/\nPATH=\$\{PATH\/\/:?\Q${safe_path}\E:?\/\} #.+$//gm;
         writeFile( $rcFilePath, $rcFileData );    # apply changes
 
         println "OK (add)";
@@ -357,7 +357,8 @@ if ( is( $mode, ( "--", "rmf" ) ) ) {
         exit 1;
     }
 
-    my $export = "PATH=\${PATH//:$safe_path/} # rmf $path\n";
+    my $pattern = index( $ENV{PATH}, $path ) == 0 ? "$safe_path:" : ":$safe_path";
+    my $export  = "PATH=\${PATH//$pattern/} # rmf $path\n";
 
     appendFileAt( $rcFilePath, $export, findLineAtFile( $rcFilePath, "export PATH #" ) );    # append export line
     update();
@@ -393,7 +394,9 @@ if ( is( $mode, ("brm") ) ) {
             $rcFileData =~ s/\nPATH=\$PATH:\Q${dir}\E\/? #.+$//gm;    # rm
             writeFile( $rcFilePath, $rcFileData );                    # apply changes
         } else {
-            my $export = "PATH=\${PATH//:$safe_dir/} # brm $path\n";                                # rmf
+            my $pattern = index( $ENV{PATH}, $dir ) == 0 ? "$safe_dir:" : ":$safe_dir";
+            my $export  = "PATH=\${PATH//$pattern/} # brm $path\n";                       # rmf
+
             appendFileAt( $rcFilePath, $export, findLineAtFile( $rcFilePath, "export PATH #" ) );   # append export line
         }
 
