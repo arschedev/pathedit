@@ -7,9 +7,9 @@
 use strict;
 use warnings;
 
-my $VERSION  = "1.5.0-dev.1";
+my $VERSION  = "1.5.0-dev.2";
 my $CODENAME = "sequoia";
-my $DATE     = "2025-08-04";
+my $DATE     = "2025-08-06";
 
 #
 ## Set up
@@ -53,7 +53,7 @@ my %rcFileTable = (
     "ksh"     => sub { $rcFile = ".shinit" },
     "sh"      => sub { $rcFile = ".profile" },
     "zsh"     => sub { $rcFile = ".zshrc" },
-    "default" => sub { print "Your shell is currently not supported: $shell\n" }
+    "default" => sub { println "Your shell is currently not supported: $shell" }
 );
 
 # Setup
@@ -87,7 +87,7 @@ if ( exists $rcFileTable{$shell} ) {
     if ( isNot( $shell, ( "sh", "dash", "ksh" ) ) ) {
         %completeMessage = (
             "re_login"    => "Please re-login into your terminal to update PATH",
-            "update_path" => "Run `source ~/$rcFile` to update PATH\nWithout logging out"
+            "update_path" => "Run `source ~/$rcFile` to update PATH\n(Without logging out)"
         );
     }
 } else {
@@ -225,7 +225,7 @@ if ( scalar @ARGV > 0 and $ARGV[0] =~ /^$commands$/m ) {
 
     # -V
     if ( is( $command, ("-V") ) ) {
-        println "$VERSION";
+        println $VERSION;
         exit 0;
     }
 
@@ -282,7 +282,7 @@ if ( $rcFileData !~ /^export PATH #$/m ) {    #!
 if ( is( $mode, ( "+", "add", "-", "rm", "--", "rmf" ) ) ) {
     if ( $path eq "current" ) {
         $path = trim `pwd`;                   # present working directory
-        println $path . "\n";
+        println $path;
     }
 }
 
@@ -333,7 +333,7 @@ if ( is( $mode, ( "-", "rm" ) ) ) {
 
         # exists in PATH
         if ( $supported and grep { $_ eq $path } split( ":", $ENV{PATH} ) ) {
-            println "Try running with \"rmf\"\n";
+            println "Try running with \"rmf\"";
         }
 
         exit 2;
@@ -353,7 +353,7 @@ if ( is( $mode, ( "-", "rm" ) ) ) {
 if ( is( $mode, ( "--", "rmf" ) ) ) {
 
     if ($not_supported) {
-        println "Not supported (rmf): $shell $if_darwin\n";
+        println "Not supported (rmf): $shell $if_darwin";
         exit 1;
     }
 
@@ -372,7 +372,7 @@ if ( is( $mode, ( "--", "rmf" ) ) ) {
 if ( is( $mode, ("brm") ) ) {
 
     if ($not_supported) {
-        println "Not supported (brm): $shell $if_darwin\n";
+        println "Not supported (brm): $shell $if_darwin";
         exit 1;
     }
 
