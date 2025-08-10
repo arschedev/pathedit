@@ -1,15 +1,15 @@
 #!/usr/bin/perl
 
 ##
-# Copyright (c) 2023 arschedev
+# Copyright (c) 2025 arschedev
 #
 
 use strict;
 use warnings;
 
-my $VERSION  = "1.4.0-1";
-my $CODENAME = "chunk";
-my $DATE     = "2023-11-06";
+my $VERSION  = "1.5.0";
+my $CODENAME = "sequoia";
+my $DATE     = "2025-08-06";
 
 #
 ## Set up
@@ -19,6 +19,7 @@ my $DATE     = "2023-11-06";
 sub is;
 sub isNot;
 sub trim;
+sub stringFmt;
 sub getShell;
 sub println;
 sub confirm;
@@ -48,26 +49,29 @@ my %completeMessage = (
 ## Table
 my %rcFileTable = (
     "bash"    => sub { $rcFile = ".bashrc" },
-    "csh"     => sub { $rcFile = ".cshrc" },
     "dash"    => sub { $rcFile = ".shinit" },
     "ksh"     => sub { $rcFile = ".shinit" },
     "sh"      => sub { $rcFile = ".profile" },
-    "tcsh"    => sub { $rcFile = ".tcshrc" },
     "zsh"     => sub { $rcFile = ".zshrc" },
-    "default" => sub { print "Your shell is currently not supported: $shell\n" }
+    "default" => sub { println "Your shell is currently not supported: $shell" }
 );
 
-# ...
+# Setup
 if ( exists $rcFileTable{$shell} ) {
     $rcFileTable{$shell}->();
 
+    # bash on macOS
+    if ( $rcFile eq ".bashrc" and $OS eq "darwin" ) {
+        $rcFile = ".bash_profile";
+    }
+
     # .shinit
     if ( $rcFile eq ".shinit" ) {    # dash, ksh
-        touchFile "$home/.profile";
+        touchFile $profilePath;
 
         # set up .shinit
         if ( readFile($profilePath) !~ /# PATHEDIT\nENV=\$HOME\/\.shinit; export ENV/m ) {
-            appendFile( $profilePath, "\n\n# PATHEDIT\nENV=\$HOME/.shinit; export ENV" );    # set ENV
+            appendFile( $profilePath, "\n# PATHEDIT\nENV=\$HOME/.shinit; export ENV" );    # set ENV
         }
     }
 
@@ -83,7 +87,7 @@ if ( exists $rcFileTable{$shell} ) {
     if ( isNot( $shell, ( "sh", "dash", "ksh" ) ) ) {
         %completeMessage = (
             "re_login"    => "Please re-login into your terminal to update PATH",
-            "update_path" => "Run `source ~/$rcFile` to update PATH\nWithout logging out"
+            "update_path" => "Run `source ~/$rcFile` to update PATH\n(Without logging out)"
         );
     }
 } else {
@@ -98,15 +102,22 @@ my $rcFilePath = "$home/$rcFile";
 ## Help
 #
 
-# linux
 my $if_darwin     = "";
 my $not_supported = "";
 
-# mac
 if ( $OS eq "darwin" ) {
-    $if_darwin     = " for mac";
+    $if_darwin = "(macOS)";
+
+    if ( is( $shell, ( "bash", "sh" ) ) ) {
+        $not_supported = "(not supported)";
+    }
+}
+
+if ( $shell eq "dash" ) {
     $not_supported = "(not supported)";
 }
+
+my $supported = !$not_supported;
 
 ## help
 my $help = "Usage: pathedit [MODE | COMMAND] [PATH]
@@ -136,23 +147,23 @@ my $help = "Usage: pathedit [MODE | COMMAND] [PATH]
         pathedit rm  current\t\tremove current directory from PATH
         pathedit rmf current\t\tforce remove current directory from PATH
         pathedit -list\t\t\tprint all directories listed in PATH
-        pathedit -profile\t\topen ~/.profile on PATHEDIT line
-        pathedit -reveal\t\topen ~/$rcFile on PATHEDIT line\n\t";
+        pathedit -profile\t\topen ~/.profile at PATHEDIT line
+        pathedit -reveal\t\topen ~/$rcFile at PATHEDIT line\n\t";
 
 #
 ## CLI
 #
 
-# pathedit
+my $pathedit = wrapText( "arschedev's pathedit $if_darwin\n version $VERSION \"$CODENAME\" ($shell)", "*" );
+
 if ( scalar @ARGV == 0 ) {
-    my $pathedit = wrapText( "arschedev's pathedit$if_darwin\n version $VERSION \"$CODENAME\"", "*" );
     println $pathedit . "\n" . $help;
     exit 0;
 }
 
 # Create rc file & .profile if not created
-touchFile "$home/$rcFile";
-touchFile "$home/.profile";
+touchFile $rcFilePath;
+touchFile $profilePath;
 
 #
 # Commands
@@ -208,14 +219,13 @@ if ( scalar @ARGV > 0 and $ARGV[0] =~ /^$commands$/m ) {
 
     # help
     if ( is( $command, ( "-h", "-help", "--help" ) ) ) {
-        my $pathedit = wrapText( "arschedev's pathedit$if_darwin\n version $VERSION \"$CODENAME\"", "*" );
         println $pathedit . "\n" . $help;
         exit 0;
     }
 
     # -V
     if ( is( $command, ("-V") ) ) {
-        println "$VERSION";
+        println $VERSION;
         exit 0;
     }
 
@@ -239,6 +249,8 @@ if ( scalar @ARGV < 2 ) {
 my $mode = $ARGV[0];            #
 my $path = pathFmt $ARGV[1];    # remove unnecessary /
 
+my $safe_path = stringFmt $path;    # escaped /
+
 # if not a mode
 if ( isNot( $mode, ( "+", "add", "-", "rm", "--", "rmf", "brm" ) ) ) {
     println wrapText( "Error: no such mode...\n Error: `$mode` not found", "=" ) . "\n" . $help;
@@ -256,7 +268,7 @@ my $rcFileData = readFile $rcFilePath;
 
 # PATHEDIT
 if ( $rcFileData !~ /^# PATHEDIT$/m ) {    #!
-    appendFile( $rcFilePath, "\n\n# PATHEDIT" );
+    appendFile( $rcFilePath, "\n# PATHEDIT" );
     $rcFileData = readFile $rcFilePath;    # update
 }
 
@@ -270,7 +282,7 @@ if ( $rcFileData !~ /^export PATH #$/m ) {    #!
 if ( is( $mode, ( "+", "add", "-", "rm", "--", "rmf" ) ) ) {
     if ( $path eq "current" ) {
         $path = trim `pwd`;                   # present working directory
-        println $path . "\n";
+        println $path;
     }
 }
 
@@ -295,8 +307,8 @@ sub update {
 if ( is( $mode, ( "+", "add" ) ) ) {
 
     # removing trace of rmf
-    if ( $rcFileData =~ /\nPATH=\$\{PATH\/\':\Q${path}\E\/?\'\/\} #.+$/gm ) {
-        $rcFileData =~ s/\nPATH=\$\{PATH\/\':\Q${path}\E\/?\'\/\} #.+$//gm;
+    if ( $rcFileData =~ /\nPATH=\$\{PATH\/\/:?\Q${safe_path}\E:?\/\} #.+$/gm ) {
+        $rcFileData =~ s/\nPATH=\$\{PATH\/\/:?\Q${safe_path}\E:?\/\} #.+$//gm;
         writeFile( $rcFilePath, $rcFileData );    # apply changes
 
         println "OK (add)";
@@ -318,6 +330,12 @@ if ( is( $mode, ( "+", "add" ) ) ) {
 if ( is( $mode, ( "-", "rm" ) ) ) {
     if ( $rcFileData !~ /\nPATH=\$PATH:\Q${path}\E\/? #.+$/gm ) {
         println "Not Found (rm)";
+
+        # exists in PATH
+        if ( $supported and grep { $_ eq $path } split( ":", $ENV{PATH} ) ) {
+            println "Try running with \"rmf\"";
+        }
+
         exit 2;
     }
 
@@ -334,13 +352,13 @@ if ( is( $mode, ( "-", "rm" ) ) ) {
 # force remove
 if ( is( $mode, ( "--", "rmf" ) ) ) {
 
-    # mac
-    if ( $OS eq "darwin" ) {
-        println "Not supported (rmf on macOS)\n";
+    if ($not_supported) {
+        println "Not supported (rmf): $shell $if_darwin";
         exit 1;
     }
 
-    my $export = "PATH=\${PATH/':$path'/} # rmf $path\n";
+    my $pattern = index( $ENV{PATH}, $path ) == 0 ? "$safe_path:" : ":$safe_path";
+    my $export  = "PATH=\${PATH//$pattern/} # rmf $path\n";
 
     appendFileAt( $rcFilePath, $export, findLineAtFile( $rcFilePath, "export PATH #" ) );    # append export line
     update();
@@ -353,13 +371,13 @@ if ( is( $mode, ( "--", "rmf" ) ) ) {
 # binary path remove
 if ( is( $mode, ("brm") ) ) {
 
-    # mac
-    if ( $OS eq "darwin" ) {
-        println "Not supported (brm on macOS)\n";
+    if ($not_supported) {
+        println "Not supported (brm): $shell $if_darwin";
         exit 1;
     }
 
-    my $dir = getDir $path;    # get binary path
+    my $dir      = getDir $path;      # get binary path
+    my $safe_dir = stringFmt $dir;    # escaped /
 
     if ( $dir eq "" ) {
         println "Not Found (brm)";
@@ -376,7 +394,9 @@ if ( is( $mode, ("brm") ) ) {
             $rcFileData =~ s/\nPATH=\$PATH:\Q${dir}\E\/? #.+$//gm;    # rm
             writeFile( $rcFilePath, $rcFileData );                    # apply changes
         } else {
-            my $export = "PATH=\${PATH/':$dir'/} # brm $path\n";                                    # rmf
+            my $pattern = index( $ENV{PATH}, $dir ) == 0 ? "$safe_dir:" : ":$safe_dir";
+            my $export  = "PATH=\${PATH//$pattern/} # brm $path\n";                       # rmf
+
             appendFileAt( $rcFilePath, $export, findLineAtFile( $rcFilePath, "export PATH #" ) );   # append export line
         }
 
@@ -420,9 +440,16 @@ sub trim {
 }
 
 #
+sub stringFmt {
+    my $string = $_[0];
+    $string =~ s/\//\\\//g;       # escape /
+    return $string;
+}
+
+#
 sub getShell {
     my @path = split( "/", `echo \$SHELL` );
-    return trim $path[-1];        # return last token - shell name
+    return trim $path[-1];        # return last token (shell name)
 }
 
 #
@@ -552,6 +579,3 @@ sub pathFmt {
 
     return join( "", @path );
 }
-
-# TODO: Refine error handling
-# TODO: Complete macOS support
